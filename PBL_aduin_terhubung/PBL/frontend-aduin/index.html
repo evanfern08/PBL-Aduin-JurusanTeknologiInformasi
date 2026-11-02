@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>ADUIN</title>
+  <script>
+    // Halaman awal: arahkan ke dashboard sesuai peran, atau ke login bila belum masuk.
+    var HOME = { Pelapor: 'pelapor/index.html', Verifikator: 'verifikator/index.html', Teknisi: 'teknisi/index.html' };
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem('aduin_session') || 'null'); } catch (e) {}
+    window.location.replace(s && HOME[s.peran] ? HOME[s.peran] : 'login.html');
+  </script>
+</head>
+<body></body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard pelaporan fasilitas ADUIN untuk pelapor.">
+  <title>Dashboard Pelapor - ADUIN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="dashboard-body">
+<div class="dashboard-wrapper">
+<aside class="sidebar-blue" aria-label="Navigasi pelapor">
+<div class="sidebar-top">
+<a href="index.html" class="sidebar-brand" aria-label="ADUIN, kembali ke dashboard">
+<span class="sidebar-brand-icon" aria-hidden="true">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 9h.01M15 9h.01"></path>
+</svg>
+</span>
+<span>
+<span class="sidebar-brand-title">ADUIN</span>
+<span class="sidebar-brand-subtitle">Facility Reporting</span>
+</span>
+</a>
+
+<nav class="sidebar-nav" aria-label="Menu utama">
+      <a href="index.html" class="nav-link active" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="laporan.html" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 2v6h6M8 13h8M8 17h8"></path>
+        </svg>
+        <span>Buat Laporan</span>
+      </a>
+      <a href="daftar_laporan.html" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
+        </svg>
+        <span>Daftar Laporan</span>
+      </a>
+      <a href="../pengaturan.html?role=pelapor" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="m19.4 15 .1.1a2 2 0 0 1-2.8 2.8l-.1-.1a2 2 0 0 0-3.4 1.4v.2a2 2 0 0 1-4 0v-.2a2 2 0 0 0-3.4-1.4l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a2 2 0 0 0-1.4-3.4h-.2a2 2 0 0 1 0-4h.2a2 2 0 0 0 1.4-3.4l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a2 2 0 0 0 3.4-1.4v-.2a2 2 0 0 1 4 0v.2a2 2 0 0 0 3.4 1.4l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a2 2 0 0 0 1.4 3.4h.2a2 2 0 0 1 0 4h-.2a2 2 0 0 0-1.4 3.4z"></path>
+        </svg>
+        <span>Pengaturan</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-user-card">
+      <span data-profile-initials class="user-avatar-sm" aria-hidden="true">RN</span>
+      <div class="sidebar-user-info">
+        <p data-profile-name class="sidebar-user-name">Rachmah Nur Chotimah</p>
+        <p class="sidebar-user-role">Mahasiswa</p>
+      </div>
+    </div>
+    <a href="../login.html" class="btn-logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <path d="m16 17 5-5-5-5M21 12H9"></path>
+      </svg>
+      <span>Keluar</span>
+    </a>
+  </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="content-header">
+        <div>
+          <span class="header-breadcrumb">Pelaporan fasilitas / <strong>Dashboard</strong></span>
+          <h1 class="header-title">Dashboard Pelapor</h1>
+          <p class="header-subtitle">Pantau status laporan fasilitas yang kamu kirim.</p>
+        </div>
+        <span class="status-badge status-badge-success">Pelapor aktif</span>
+      </header>
+
+      <main class="content-body">
+        <section aria-labelledby="welcome-title">
+          <h2 id="welcome-title" class="card-title">Selamat datang, <span data-profile-first-name>Rachmah</span></h2>
+          <p class="text-muted">Ringkasan laporan fasilitasmu akan selalu diperbarui di sini.</p>
+        </section>
+
+        <section class="metric-grid" aria-label="Ringkasan laporan">
+          <article class="glass-card metric-card">
+            <span class="metric-label">Total laporanku</span>
+            <strong id="total-reports" class="metric-value">0</strong>
+            <span class="metric-note">Seluruh laporan yang tercatat</span>
+          </article>
+          <article class="glass-card metric-card">
+            <span class="metric-label">Menunggu verifikasi</span>
+            <strong id="pending-reports" class="metric-value">0</strong>
+            <span class="metric-note">Menunggu tindak lanjut</span>
+          </article>
+          <article class="glass-card metric-card">
+            <span class="metric-label">Sedang diproses</span>
+            <strong id="processing-reports" class="metric-value">0</strong>
+            <span class="metric-note">Ditangani oleh tim fasilitas</span>
+          </article>
+          <article class="glass-card metric-card">
+            <span class="metric-label">Selesai</span>
+            <strong id="completed-reports" class="metric-value">0</strong>
+            <span class="metric-note">Laporan telah ditindaklanjuti</span>
+          </article>
+        </section>
+
+        <section class="glass-card" aria-labelledby="new-report-title">
+          <div class="card-header">
+            <div>
+              <h2 id="new-report-title" class="card-title">Ada fasilitas yang rusak?</h2>
+              <p class="card-subtitle">Laporkan kerusakan agar tim fasilitas dapat segera menindaklanjuti.</p>
+            </div>
+            <a href="laporan.html" class="btn btn-success">
+              <span aria-hidden="true">+</span>
+              <span>Buat Laporan Baru</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="glass-card" aria-labelledby="recent-reports-title">
+          <div class="card-header">
+            <div>
+              <h2 id="recent-reports-title" class="card-title">Laporan terbaru</h2>
+              <p class="card-subtitle">Data pelapor, lokasi, kategori, dan status laporanmu.</p>
+            </div>
+            <a href="daftar_laporan.html" class="btn btn-ghost">Lihat semua laporan</a>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Pelapor</th>
+                  <th scope="col">Lokasi</th>
+                  <th scope="col">Kategori</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-reports" aria-live="polite">
+                <tr>
+                  <td colspan="4" class="text-muted">Memuat laporan...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script src="pelapor.js"></script>
+</body>
+
+</html>
