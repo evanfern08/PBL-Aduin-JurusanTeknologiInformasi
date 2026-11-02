@@ -1,703 +1,324 @@
+/**
+ * pelapor.js - Halaman Pelapor (mahasiswa/dosen): dashboard, buat laporan, daftar laporan.
+ * Semua data diambil dari backend lewat API (lihat assets/js/api.js).
+ */
+(function () {
+  'use strict';
 
-const HIDDEN_KEY = 'aduin_pelapor_hidden';
+  const A = window.ADUIN;
+  const API = A.API;
+  const esc = A.escapeHtml;
+  const sesi = A.getSession();
+  if (!sesi) return; // guard() di api.js sudah mengarahkan ke login
 
-function getHiddenIds() {
-  try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); }
-  catch (e) { return []; }
-}
+  let semuaLaporan = [];
 
-async function loadPelaporData() {
-  const res = await fetch('data.json');
-  if (!res.ok) throw new Error('Gagal memuat pelapor/data.json');
-  const data = await res.json();
-  if (!Array.isArray(data.laporan_masuk)) {
-    throw new Error('Format laporan_masuk pada pelapor/data.json tidak valid');
+  async function muatLaporan() {
+    semuaLaporan = await API.get('pelapor/riwayat.php', { id_pelapor: sesi.id_user });
+    return semuaLaporan;
   }
 
-  // Buang laporan yang sudah "dibersihkan"
-  const hidden = getHiddenIds();
-  data.laporan_masuk = data.laporan_masuk.filter(r => !hidden.includes(r.id));
-  return data;
-}
+  /* ------------------------------------------------------------------
+     Timeline progres (4 langkah, versi sederhana untuk pelapor)
+     ------------------------------------------------------------------ */
+  function progresLaporan(r) {
+    const status = A.statusUntukPelapor(r.status_ui);
+    const kembali = status === 'Dikembalikan ke Pelapor';
+    const aktif = status === 'Menunggu Verifikasi' ? 0 : status === 'Selesai' ? 3 : 1;
 
-window.bersihkanRiwayatSaya = async function () {
-  if (!confirm('Hapus semua riwayat laporan kamu?')) return;
-  const res = await fetch('data.json');
-  const data = await res.json();
-  const ids = (data.laporan_masuk || []).map(r => r.id);
-  localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids));
-  location.reload();
-};
-
-window.initPelaporPage = function initPelaporPage(initialReports) {
-  "use strict";
-
-  const REPORTS_KEY = "aduin.pelapor.reports.v1";
-  const PROFILE_KEY = "aduin.pelapor.profile.v1";
-  const DEFAULT_PROFILE = { name: "Rachmah Nur Chotimah" };
-  let storageReadFailed = false;
-  const seedReports = Array.isArray(initialReports) ? initialReports : [];
-
-  const page = document.body;
-  const appFeedback = document.createElement("p");
-  appFeedback.id = "app-feedback";
-  appFeedback.className = "alert-box status-pill-danger hidden";
-  appFeedback.setAttribute("role", "alert");
-  appFeedback.setAttribute("aria-live", "assertive");
-  page.append(appFeedback);
-
-  function showAppError(message) {
-    appFeedback.textContent = message;
-    appFeedback.classList.remove("hidden");
-  }
-
-  function readStorage(key, fallback) {
-    try {
-      const value = localStorage.getItem(key);
-      return value === null ? fallback : JSON.parse(value);
-    } catch (error) {
-      storageReadFailed = true;
-      showAppError(`Data aplikasi tidak dapat dibaca dari penyimpanan browser: ${error.message}`);
-      return fallback;
-    }
-  }
-
-  function writeStorage(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-      return true;
-    } catch (error) {
-      showAppError(`Perubahan tidak dapat disimpan di browser: ${error.message}`);
-      return false;
-    }
-  }
-
-  function getReports() {
-    const storedReports = readStorage(REPORTS_KEY, null);
-    if (storedReports === null) {
-      if (storageReadFailed) return [];
-      if (!writeStorage(REPORTS_KEY, seedReports)) return [];
-      return seedReports;
-    }
-    if (!Array.isArray(storedReports)) {
-      showAppError("Data laporan tidak valid. Hapus data situs ADUIN dari penyimpanan browser untuk memulai ulang.");
-      return [];
-    }
-    return storedReports;
-  }
-
-  function getProfile() {
-    const session = readStorage("aduin_session", null);
-    if (session && session.role === "Pelapor" && typeof session.nama === "string" && session.nama.trim()) {
-      return { name: session.nama.trim() };
-    }
-    const profile = readStorage(PROFILE_KEY, DEFAULT_PROFILE);
-    if (!profile || typeof profile.name !== "string" || !profile.name.trim()) {
-      showAppError("Data profil tidak valid. Ubah profil kembali melalui halaman Pengaturan.");
-      return DEFAULT_PROFILE;
-    }
-    return profile;
-  }
-
-  function initialsFor(name) {
-    return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  }
-
-  function renderProfile() {
-    const profile = getProfile();
-    document.querySelectorAll("[data-profile-name]").forEach((element) => {
-      element.textContent = profile.name;
-    });
-    document.querySelectorAll("[data-profile-first-name]").forEach((element) => {
-      element.textContent = profile.name.trim().split(/\s+/)[0];
-    });
-    document.querySelectorAll("[data-profile-initials]").forEach((element) => {
-      element.textContent = initialsFor(profile.name);
-    });
-  }
-
-  function reportDate(date) {
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(new Date(date));
-  }
-
-  function progressCard(report) {
-    const status = report.status;
-    const activeIndex = status === "Menunggu Verifikasi" ? 0 : status === "Selesai" ? 3 : 1;
-    const returned = status === "Dikembalikan ke Pelapor";
-    
-    // 1. Ambil tanggal dari field apapun yang tersedia
-    // Kalau di JSON namanya 'date', atau 'tanggal', atau 'created_at'
-    const rawDate = report.tanggal || report.created_at || report.date || "-";
-    
-    // 2. Format tanggal biar cantik (kalau formatnya ISO)
-    const formatDate = (str) => {
-      if (!str || str === "-") return "-";
-      // Cek kalau dia string ISO (ada huruf T)
-      if (str.includes('T')) {
-        return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(str));
-      }
-      return str; // Kalau udah "05 Okt 2026" ya biarin aja
-    };
-
-    const tglDikirim = formatDate(rawDate);
-
-    const steps = [
-      { label: "Dikirim", sub: tglDikirim },
-      // Paksa munculin tanggal yang sama buat demo biar gak strip
-      { label: "Diverifikasi", sub: status !== "Menunggu Verifikasi" ? tglDikirim : "-" },
-      { label: returned ? "Dikembalikan" : "Diproses", sub: returned ? "Dikembalikan ke Pelapor" : "Ditangani Teknisi" },
-      { label: "Selesai", sub: status === "Selesai" ? tglDikirim : "-" },
+    const langkah = [
+      { label: 'Dikirim', sub: A.tanggalPendek(r.tanggal_lapor) },
+      { label: 'Diverifikasi', sub: status !== 'Menunggu Verifikasi' ? A.tanggalPendek(r.tanggal_verifikasi) : '-' },
+      { label: kembali ? 'Dikembalikan' : 'Diproses', sub: kembali ? 'Dikembalikan ke Pelapor' : (r.nama_teknisi ? 'Ditangani ' + r.nama_teknisi : 'Ditangani Teknisi') },
+      { label: 'Selesai', sub: status === 'Selesai' ? A.tanggalPendek(r.tanggal_status_terakhir) : '-' },
     ];
 
-    const container = document.createElement("div");
-    container.className = "timeline-wrap";
-    const caption = document.createElement("p");
-    caption.className = "timeline-label";
-    caption.textContent = "PROGRES LAPORAN";
-    const timeline = document.createElement("div");
-    timeline.className = "timeline";
+    const nodes = langkah.map(function (l, i) {
+      const tercapai = status === 'Selesai' || i < aktif;
+      const sedang = i === aktif && status !== 'Selesai';
+      const cls = status === 'Selesai' ? ' success' : tercapai ? ' done' : sedang ? ' active' : '';
+      return '<div class="timeline-node' + cls + '"><div class="timeline-dot">' + (tercapai ? '✓' : i + 1) +
+        '</div><span class="timeline-caption">' + esc(l.label) + '</span><span class="timeline-sub">' + esc(l.sub) + '</span></div>';
+    }).join('');
 
-    steps.forEach((label, index) => {
-      const step = document.createElement("div");
-      const reached = status === "Selesai" || index < activeIndex;
-      const current = index === activeIndex && status !== "Selesai";
-      step.className = `timeline-node${status === "Selesai" ? " success" : reached ? " done" : current ? " active" : ""}`;
-      
-      const marker = document.createElement("div");
-      marker.className = "timeline-dot";
-      marker.textContent = reached ? "✓" : String(index + 1);
-      
-      const text = document.createElement("span");
-      text.className = "timeline-caption";
-      text.textContent = label.label;
-      
-      const sub = document.createElement("span");
-      sub.className = "timeline-sub";
-      sub.textContent = label.sub;
-
-      step.append(marker, text, sub);
-      timeline.append(step);
-    });
-    container.append(caption, timeline);
-    return container;
+    return '<div class="timeline-wrap"><p class="timeline-label">PROGRES LAPORAN</p><div class="timeline">' + nodes + '</div></div>';
   }
 
-  function reportStatusClass(status) {
-    if (status === "Diproses") return "status-pill-info";
-    if (status === "Selesai") return "status-pill-success";
-    if (status === "Dikembalikan ke Pelapor") return "status-pill-danger";
-    return "status-pill-warning";
-  }
+  /* ------------------------------------------------------------------
+     Dashboard (index.html)
+     ------------------------------------------------------------------ */
+  function renderDashboard() {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v); };
+    const st = (r) => A.statusUntukPelapor(r.status_ui);
+    set('total-reports', semuaLaporan.length);
+    set('pending-reports', semuaLaporan.filter((r) => st(r) === 'Menunggu Verifikasi').length);
+    set('processing-reports', semuaLaporan.filter((r) => st(r) === 'Diproses').length);
+    set('completed-reports', semuaLaporan.filter((r) => st(r) === 'Selesai').length);
 
-  function createReportCard(report, profileName) {
-    const card = document.createElement("article");
-    card.className = "glass-card riwayat-card";
-    const heading = document.createElement("div");
-    heading.className = "riwayat-head";
-    const details = document.createElement("div");
-    const title = document.createElement("h3");
-    title.className = "riwayat-title";
-    title.textContent = report.title;
-    const location = document.createElement("p");
-    location.className = "riwayat-meta";
-    location.textContent = `${report.roomLabel} · ${reportDate(report.date)}`;
-    const reporter = document.createElement("p");
-    reporter.className = "riwayat-meta";
-    reporter.textContent = `Pelapor: ${profileName} · ${report.category}`;
-    details.append(title, location, reporter);
-
-    const badge = document.createElement("span");
-    badge.className = `status-pill ${reportStatusClass(report.status)}`;
-    badge.textContent = report.status;
-    heading.append(details, badge);
-    card.append(heading);
-
-    if (report.description) {
-      const description = document.createElement("p");
-      description.className = "card-subtitle";
-      description.textContent = report.description;
-      card.append(description);
+    const tbody = document.getElementById('dashboard-reports');
+    if (!tbody) return;
+    const terbaru = semuaLaporan.slice(0, 5);
+    if (!terbaru.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Belum ada laporan. Buat laporan pertamamu untuk mulai.</td></tr>';
+      return;
     }
-
-    if (Array.isArray(report.images) && report.images.length > 0) {
-      const photoGrid = document.createElement("div");
-      photoGrid.className = "report-photo-grid";
-      
-    // Tampilkan maksimal 3 foto di preview kartu
-      report.images.slice(0, 3).forEach((imgSrc) => {
-      const img = document.createElement("img");
-      img.src = imgSrc;
-      img.className = "thumb-preview";
-      photoGrid.append(img);
-    });
-
-    // Jika foto lebih dari 3, beri indikator angka tambahan (+2, dsb)
-    if (report.images.length > 3) {
-      const badgeMore = document.createElement("span");
-      badgeMore.className = "more-photos-badge";
-      badgeMore.textContent = `+${report.images.length - 3}`;
-      photoGrid.append(badgeMore);
-    }
-
-    // Buka modal detail saat area foto diklik
-      photoGrid.addEventListener("click", () => openDetailModal(report));
-      card.append(photoGrid);
+    tbody.innerHTML = terbaru.map(function (r) {
+      const s = st(r);
+      return '<tr><td>' + esc(r.nama_pelapor) + '</td><td>' + esc(r.nama_ruangan) + '</td><td>' + esc(r.nama_kategori) +
+        '</td><td><span class="status-pill ' + A.pillClass(s) + '">' + esc(s) + '</span></td></tr>';
+    }).join('');
   }
-    card.append(progressCard(report.status));
-    card.append(progressCard(report));
-    card.dataset.status = report.status;
+
+  /* ------------------------------------------------------------------
+     Daftar laporan (daftar_laporan.html)
+     ------------------------------------------------------------------ */
+  function kartuLaporan(r) {
+    const s = A.statusUntukPelapor(r.status_ui);
+    const card = document.createElement('article');
+    card.className = 'glass-card riwayat-card';
+    card.style.cursor = 'pointer';
+    card.dataset.status = s;
+
+    let html =
+      '<div class="riwayat-head"><div>' +
+      '<h3 class="riwayat-title">' + esc(r.judul_laporan) + '<span class="riwayat-code">#' + r.id_pengaduan + '</span></h3>' +
+      '<p class="riwayat-meta">' + esc(r.nama_ruangan) + ' · ' + A.tanggalJam(r.tanggal_lapor) + '</p>' +
+      '<p class="riwayat-meta">Pelapor: ' + esc(r.nama_pelapor) + ' · ' + esc(r.nama_kategori) + '</p></div>' +
+      '<span class="status-pill ' + A.pillClass(s) + '">' + esc(s) + '</span></div>';
+
+    if (r.deskripsi) html += '<p class="card-subtitle">' + esc(r.deskripsi) + '</p>';
+    if (s === 'Dikembalikan ke Pelapor' && r.alasan_penolakan) {
+      html += '<p style="font-size:12px;color:#b91c1c;margin-top:8px;">Alasan dikembalikan: ' + esc(r.alasan_penolakan) + '</p>';
+    }
+    if (r.foto_list.length) {
+      html += '<div class="report-photo-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">' +
+        r.foto_list.slice(0, 3).map((f) => '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Foto laporan" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">').join('') +
+        (r.foto_list.length > 3 ? '<span class="more-photos-badge">+' + (r.foto_list.length - 3) + '</span>' : '') + '</div>';
+    }
+    html += progresLaporan(r);
+    card.innerHTML = html;
+    card.addEventListener('click', () => bukaDetail(r));
     return card;
   }
 
-  function openDetailModal(report) {
-  // Ambil elemen modal dari daftar_laporan.html (atau buat elemen modal secara otomatis)
-  let modal = document.getElementById("detail-modal");
-  
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "detail-modal";
-    modal.className = "modal-overlay";
-    document.body.append(modal);
+  function bukaDetail(r) {
+    let modal = document.getElementById('detail-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'detail-modal';
+      modal.className = 'modal-overlay hidden';
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+      document.body.append(modal);
+    }
+    const s = A.statusUntukPelapor(r.status_ui);
+    modal.innerHTML =
+      '<div class="modal-box" style="max-width:560px;max-height:90vh;overflow:auto;">' +
+      '<div class="modal-header"><div><h3 class="modal-title">' + esc(r.judul_laporan) + '</h3>' +
+      '<span class="modal-subtitle">#' + r.id_pengaduan + ' · ' + esc(r.nama_ruangan) + '</span></div>' +
+      '<button type="button" class="modal-close" id="close-modal">&times;</button></div>' +
+      '<div class="modal-body" style="font-size:13px;">' +
+      '<p><strong>Kategori:</strong> ' + esc(r.nama_kategori) + '</p>' +
+      '<p><strong>Status:</strong> <span class="status-pill ' + A.pillClass(s) + '">' + esc(s) + '</span></p>' +
+      '<p><strong>Dilaporkan:</strong> ' + A.tanggalJam(r.tanggal_lapor) + '</p>' +
+      '<p><strong>Deskripsi:</strong> ' + esc(r.deskripsi) + '</p>' +
+      (r.alasan_penolakan ? '<p style="color:#b91c1c;"><strong>Alasan dikembalikan:</strong> ' + esc(r.alasan_penolakan) + '</p>' : '') +
+      '<p><strong>Dokumentasi foto (' + r.foto_list.length + '):</strong></p>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">' +
+      r.foto_list.map((f, i) => '<a href="' + esc(A.fileUrl(f)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(f)) +
+        '" alt="Dokumentasi ' + (i + 1) + '" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"></a>').join('') +
+      '</div></div></div>';
+    modal.classList.remove('hidden');
+    document.getElementById('close-modal').onclick = () => modal.classList.add('hidden');
   }
 
-  // Render isi modal detail dengan Grid Foto
-  modal.innerHTML = `
-    <div class="modal-box modal-lg">
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title">${report.title}</h3>
-          <span class="modal-subtitle">${report.roomLabel}</span>
-        </div>
-        <button type="button" class="modal-close" id="close-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p><strong>Deskripsi:</strong> ${report.description}</p>
-        <p><strong>Dokumentasi Foto (${report.images ? report.images.length : 0} foto):</strong></p>
-        
-        <!-- GRID FOTO UTAMA DI MODAL DETAIL -->
-        <div class="modal-photo-grid">
-          ${(report.images || []).map((img, idx) => `
-            <div class="grid-photo-item">
-              <img src="${img}" alt="Dokumentasi ${idx + 1}" onclick="window.open('${img}', '_blank')" />
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-
-    modal.classList.remove("hidden");
-
-    // Tombol tutup modal
-    document.getElementById("close-modal").onclick = () => modal.classList.add("hidden");
-}
-
-  function renderReports() {
-    const reports = getReports();
-    const total = document.getElementById("total-reports");
-    const pending = document.getElementById("pending-reports");
-    const processing = document.getElementById("processing-reports");
-    const completed = document.getElementById("completed-reports");
-    if (total) total.textContent = String(reports.length);
-    if (pending) pending.textContent = String(reports.filter((report) => report.status === "Menunggu Verifikasi").length);
-    if (processing) processing.textContent = String(reports.filter((report) => report.status === "Diproses").length);
-    if (completed) completed.textContent = String(reports.filter((report) => report.status === "Selesai").length);
-
-    const dashboardTable = document.getElementById("dashboard-reports");
-    if (dashboardTable) {
-      const profileName = getProfile().name;
-      const latestReports = [...reports]
-        .sort((first, second) => new Date(second.date) - new Date(first.date))
-        .slice(0, 5);
-      dashboardTable.replaceChildren();
-      latestReports.forEach((report) => {
-        const row = document.createElement("tr");
-        const reporterCell = document.createElement("td");
-        reporterCell.textContent = profileName;
-        const locationCell = document.createElement("td");
-        locationCell.textContent = report.roomLabel;
-        const categoryCell = document.createElement("td");
-        categoryCell.textContent = report.category;
-        const statusCell = document.createElement("td");
-        const status = document.createElement("span");
-        const statusClass = report.status === "Selesai"
-          ? "status-pill-success"
-          : report.status === "Diproses"
-            ? "status-pill-info"
-            : report.status === "Dikembalikan ke Pelapor"
-              ? "status-pill-danger"
-              : "status-pill-warning";
-        status.className = `status-pill ${statusClass}`;
-        status.textContent = report.status;
-        statusCell.append(status);
-        row.append(reporterCell, locationCell, categoryCell, statusCell);
-        dashboardTable.append(row);
-      });
-      if (latestReports.length === 0) {
-        const row = document.createElement("tr");
-        const message = document.createElement("td");
-        message.colSpan = 4;
-        message.className = "text-muted";
-        message.textContent = "Belum ada laporan. Buat laporan pertamamu untuk mulai.";
-        row.append(message);
-        dashboardTable.append(row);
-      }
-    }
-
-    const list = document.getElementById("reports-list");
+  function renderDaftar() {
+    const list = document.getElementById('reports-list');
     if (!list) return;
-    const selectedFilter = list.dataset.filter || "all";
-    const profileName = getProfile().name;
+    const filter = list.dataset.filter || 'all';
     list.replaceChildren();
-    const visibleReports = reports.filter((report) => selectedFilter === "all" || report.status === selectedFilter);
-    visibleReports.forEach((report) => list.append(createReportCard(report, profileName)));
-    if (visibleReports.length === 0) {
-      const emptyState = document.createElement("p");
-      emptyState.className = "glass-card text-muted";
-      emptyState.textContent = "Belum ada laporan untuk status ini.";
-      list.append(emptyState);
+    const tampil = semuaLaporan.filter((r) => filter === 'all' || A.statusUntukPelapor(r.status_ui) === filter);
+    tampil.forEach((r) => list.append(kartuLaporan(r)));
+    if (!tampil.length) {
+      const p = document.createElement('p');
+      p.className = 'glass-card text-muted';
+      p.textContent = 'Belum ada laporan untuk status ini.';
+      list.append(p);
     }
   }
 
-  function showFormMessage(element, message, isError) {
-    if (!element) return;
-    element.textContent = message;
-    element.className = `alert-box status-pill ${isError ? "status-pill-danger" : "status-pill-success"}`;
+  function initFilter() {
+    const list = document.getElementById('reports-list');
+    if (!list) return;
+    document.querySelectorAll('[data-report-filter]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-report-filter]').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+        list.dataset.filter = btn.dataset.reportFilter;
+        renderDaftar();
+      });
+    });
   }
 
-  function initReportForm() {
-    const form = document.getElementById("report-form");
+  /* ------------------------------------------------------------------
+     Form buat laporan (laporan.html)
+     ------------------------------------------------------------------ */
+  async function isiPilihan() {
+    const selRuang = document.getElementById('report-room');
+    const selKat = document.getElementById('report-category');
+    const [ruangan, kategori] = await Promise.all([API.get('master/ruangan.php'), API.get('master/kategori.php')]);
+
+    // Kelompokkan ruangan per lantai
+    const perLantai = {};
+    ruangan.forEach((r) => { (perLantai[r.lantai] = perLantai[r.lantai] || []).push(r); });
+    selRuang.innerHTML = '<option value="">Pilih ruangan / fasilitas</option>' +
+      Object.keys(perLantai).sort((a, b) => a - b).map((lt) =>
+        '<optgroup label="Lantai ' + lt + '">' +
+        perLantai[lt].map((r) => '<option value="' + r.id_ruangan + '">' + esc(r.nama_ruangan) + '</option>').join('') + '</optgroup>'
+      ).join('');
+    selKat.innerHTML = '<option value="">Pilih kategori</option>' +
+      kategori.map((k) => '<option value="' + k.id_fasilitas + '">' + esc(k.nama_kategori) + '</option>').join('');
+  }
+
+  function initFormLaporan() {
+    const form = document.getElementById('report-form');
     if (!form) return;
 
-    let selectedFiles = [];//Menyimpan file gambar yang dipilih
-    
-    //Set Tanggal otomatis
-    const dateInput = document.getElementById("report-date");
+    const feedback = document.getElementById('report-feedback');
+    const tampilPesan = (pesan, galat) => {
+      feedback.textContent = pesan;
+      feedback.className = 'alert-box status-pill ' + (galat ? 'status-pill-danger' : 'status-pill-success');
+    };
+
+    isiPilihan().catch((e) => tampilPesan('Gagal memuat daftar ruangan/kategori: ' + e.message, true));
+
+    const dateInput = document.getElementById('report-date');
     if (dateInput) {
-      dateInput.value = `${new Intl.DateTimeFormat("id-ID", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: "Asia/Jakarta",
-      }).format(new Date())} WIB`;
+      dateInput.value = new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Asia/Jakarta' }).format(new Date()) + ' WIB';
     }
 
-    // GANTI BAGIAN PENANGANAN FOTO DI pelapor.js DENGAN INI:
-    const photoInput = document.getElementById("report-photo");
-    const photoFeedback = document.getElementById("photo-feedback");
-    const dropzone = document.getElementById("photo-dropzone");
-    const previewContainer = document.getElementById("photo-preview-list");
-    const maxPhotoSize = 10 * 1024 * 1024;
+    /* ---- foto ---- */
+    let fotoDipilih = [];
+    const MAKS_FOTO = 5, MAKS_UKURAN = 10 * 1024 * 1024;
+    const photoInput = document.getElementById('report-photo');
+    const feedbackFoto = document.getElementById('photo-feedback');
+    const dropzone = document.getElementById('photo-dropzone');
+    const previewList = document.getElementById('photo-preview-list');
 
-    // Fungsi untuk memproses file baru yang dipilih
-    function setPhotos(fileList) {
-      if (!fileList || fileList.length === 0) return;
-      const files = Array.from(fileList);
-      const validFiles = [];
+    const pesanFoto = (t, galat) => {
+      feedbackFoto.textContent = t;
+      feedbackFoto.className = t ? 'status-pill ' + (galat ? 'status-pill-danger' : 'status-pill-success') : 'text-muted';
+    };
 
-      for (let file of files) {
-        if (!["image/png", "image/jpeg"].includes(file.type)) {
-          photoFeedback.textContent = `File "${file.name}" bukan PNG/JPG.`;
-          photoFeedback.className = "status-pill status-pill-danger";
-          return;
-        }
-        if (file.size > maxPhotoSize) {
-          photoFeedback.textContent = `File "${file.name}" melebihi 10MB.`;
-          photoFeedback.className = "status-pill status-pill-danger";
-          return;
-        }
-        validFiles.push(file);
+    function tambahFoto(daftar) {
+      if (!daftar || !daftar.length) return;
+      const valid = [];
+      for (const f of Array.from(daftar)) {
+        if (!['image/png', 'image/jpeg'].includes(f.type)) return pesanFoto('File "' + f.name + '" bukan PNG/JPG.', true);
+        if (f.size > MAKS_UKURAN) return pesanFoto('File "' + f.name + '" melebihi 10MB.', true);
+        valid.push(f);
       }
-
-      // Gabungkan foto baru dengan foto yang sudah dipilih sebelumnya
-      const totalFiles = [...selectedFiles, ...validFiles];
-
-      if (totalFiles.length > 5) {
-        photoFeedback.textContent = "Maksimal hanya 5 foto yang diperbolehkan.";
-        photoFeedback.className = "status-pill status-pill-danger";
-        selectedFiles = totalFiles.slice(0, 5); // Ambil 5 pertama
+      const gabung = fotoDipilih.concat(valid);
+      if (gabung.length > MAKS_FOTO) {
+        fotoDipilih = gabung.slice(0, MAKS_FOTO);
+        pesanFoto('Maksimal hanya ' + MAKS_FOTO + ' foto yang diperbolehkan.', true);
       } else {
-        selectedFiles = totalFiles;
-        photoFeedback.textContent = `${selectedFiles.length} foto berhasil dipilih.`;
-        photoFeedback.className = "status-pill status-pill-success";
+        fotoDipilih = gabung;
+        pesanFoto(fotoDipilih.length + ' foto berhasil dipilih.', false);
       }
-
-      renderPreview();
+      gambarPratinjau();
     }
 
-    // Fungsi untuk menampilkan preview gambar
-    function renderPreview() {
-      if (!previewContainer) return;
-      previewContainer.innerHTML = "";
-
-      if (selectedFiles.length === 0) {
-        photoFeedback.textContent = "";
-        return;
-      }
-
-      selectedFiles.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const wrapper = document.createElement("div");
-          wrapper.style.position = "relative";
-          wrapper.style.display = "inline-block";
-          wrapper.style.margin = "5px";
-
-          const img = document.createElement("img");
-          img.src = e.target.result;
-          img.style.width = "65px";
-          img.style.height = "65px";
-          img.style.objectFit = "cover";
-          img.style.borderRadius = "8px";
-          img.style.border = "1px solid var(--line)";
-
-          // Tombol silang (x) hapus per foto
-          const removeBtn = document.createElement("button");
-          removeBtn.type = "button";
-          removeBtn.innerHTML = "x";
-          removeBtn.style.position = "absolute";
-          removeBtn.style.top = "-6px";
-          removeBtn.style.right = "-6px";
-          removeBtn.style.background = "var(--red)";
-          removeBtn.style.color = "#fff";
-          removeBtn.style.border = "none";
-          removeBtn.style.borderRadius = "50%";
-          removeBtn.style.width = "20px";
-          removeBtn.style.height = "20px";
-          removeBtn.style.fontSize = "13px";
-          removeBtn.style.fontWeight = "bold";
-          removeBtn.style.cursor = "pointer";
-
-          removeBtn.onclick = () => {
-            selectedFiles.splice(index, 1);
-            if (selectedFiles.length > 0) {
-              photoFeedback.textContent = `${selectedFiles.length} foto berhasil dipilih.`;
-              photoFeedback.className = "status-pill status-pill-success";
-            }
-            renderPreview();
-          };
-
-          wrapper.append(img, removeBtn);
-          previewContainer.appendChild(wrapper);
+    function gambarPratinjau() {
+      previewList.innerHTML = '';
+      if (!fotoDipilih.length) { pesanFoto('', false); return; }
+      fotoDipilih.forEach((file, index) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;display:inline-block;margin:5px;';
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.cssText = 'width:65px;height:65px;object-fit:cover;border-radius:8px;border:1px solid var(--line);';
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.textContent = 'x';
+        x.setAttribute('aria-label', 'Hapus foto');
+        x.style.cssText = 'position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;font-weight:bold;cursor:pointer;';
+        x.onclick = () => {
+          fotoDipilih.splice(index, 1);
+          if (fotoDipilih.length) pesanFoto(fotoDipilih.length + ' foto berhasil dipilih.', false);
+          gambarPratinjau();
         };
-        reader.readAsDataURL(file);
+        wrap.append(img, x);
+        previewList.appendChild(wrap);
       });
     }
 
-    // Event listener tombol Pilih Foto
-    const chooseBtn = document.getElementById("choose-report-photo");
-    if (chooseBtn && photoInput) {
-      chooseBtn.addEventListener("click", () => {
-        photoInput.value = ""; // Reset agar bisa pilih file baru
-        photoInput.click();
-      });
-
-      photoInput.addEventListener("change", () => {
-        setPhotos(photoInput.files);
-      });
+    const pilihBtn = document.getElementById('choose-report-photo');
+    if (pilihBtn && photoInput) {
+      pilihBtn.addEventListener('click', () => { photoInput.value = ''; photoInput.click(); });
+      photoInput.addEventListener('change', () => tambahFoto(photoInput.files));
     }
-
-    // Event listener Dropzone (Drag & Drop)
     if (dropzone) {
-      dropzone.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        dropzone.classList.add("status-badge-success");
-      });
-      dropzone.addEventListener("dragleave", () => dropzone.classList.remove("status-badge-success"));
-      dropzone.addEventListener("drop", (event) => {
-        event.preventDefault();
-        dropzone.classList.remove("status-badge-success");
-        setPhotos(event.dataTransfer.files);
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('status-badge-success'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('status-badge-success'));
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('status-badge-success');
+        tambahFoto(e.dataTransfer.files);
       });
     }
-      const description = String(data.get("description")).trim();
 
-    form.addEventListener("submit",async (event) => {
-      event.preventDefault();
-      const feedback = document.getElementById("report-feedback");
+    /* ---- kirim ---- */
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
       if (!form.reportValidity()) return;
-      
-      const data = new FormData(form);
-      const room = data.get("room");
-      const roomOption = form.elements.room.selectedOptions[0];
-      const category = data.get("category");
-      const description = String(data.get("description")).trim();
 
-    // Kompres gambar ke Base64 agar ringan disimpan di localStorage
-      const readAndCompressAsBase64 = (file) => new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            const MAX_WIDTH = 800;
-            let width = img.width;
-            let height = img.height;
+      const selKat = document.getElementById('report-category');
+      const kategoriNama = selKat.selectedOptions[0].textContent.trim();
+      const deskripsi = document.getElementById('report-description').value.trim();
+      const judul = kategoriNama + ': ' + (deskripsi.split(/[.!?\n]/)[0].slice(0, 55) || kategoriNama);
 
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
+      const fd = new FormData();
+      fd.append('id_pelapor', sesi.id_user);
+      fd.append('id_ruangan', document.getElementById('report-room').value);
+      fd.append('id_fasilitas', selKat.value);
+      fd.append('judul_laporan', judul);
+      fd.append('deskripsi', deskripsi);
 
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, width, height);
-
-            resolve(canvas.toDataURL("image/jpeg", 0.7));
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-
-      let imagesArray = [];
-      if (selectedFiles.length > 0) {
-        try {
-          imagesArray = await Promise.all(selectedFiles.map(readAndCompressAsBase64));
-        } catch (err) {
-          showFormMessage(feedback, "Gagal memproses file gambar. Coba lagi.", true);
-          return;
+      const tombol = form.querySelector('button[type="submit"]');
+      tombol.disabled = true;
+      tampilPesan('Mengirim laporan...', false);
+      try {
+        for (const f of fotoDipilih) {
+          const kecil = await A.kompresGambar(f);
+          fd.append('foto_bukti[]', kecil, kecil.name);
         }
+        await API.post('pelapor/buat_pengaduan.php', fd);
+        A.showToast('Laporan berhasil dikirim!', 'success');
+        setTimeout(() => { window.location.href = 'daftar_laporan.html'; }, 700);
+      } catch (err) {
+        tampilPesan(err.message, true);
+        tombol.disabled = false;
       }
-      
-      // ============================================================
-      // SIMULASI SERVER TIMESTAMP
-      // ============================================================
-      // 1. Ambil waktu saat ini secara paksa (seperti NOW() di database)
-      const now = new Date(); 
-      
-      // 2. Format ISO untuk disimpan sebagai timestamp presisi tinggi
-      const serverTimestamp = now.toISOString(); 
-      
-      // 3. Format tanggal yang enak dibaca (untuk ditampilkan di UI)
-      const displayDate = new Intl.DateTimeFormat("id-ID", {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-      }).format(now) + " WIB";
-
-      const report = {
-        id: `report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        title: `${category}: ${description.split(/[.!?]/)[0].slice(0, 55) || category}`,
-        room,
-        roomLabel: roomOption.textContent.trim(),
-        category,
-        description,
-        
-        // --- GANTI BAGIAN INI ---
-        date: displayDate,             // Tampilan untuk user
-        created_at: serverTimestamp,   // Simulasi Timestamp Database (NOW())
-        status: "Menunggu Verifikasi",
-        images: imagesArray // Simpan array foto di properti 'images' (bukan 'imsages')
-      };
-
-      
-      if (selectedPhoto) report.photoName = selectedPhoto.name;
-      const reports = getReports();
-      if (!writeStorage(REPORTS_KEY, [report, ...reports])) {
-        showFormMessage(feedback, "Laporan belum tersimpan. Periksa izin penyimpanan browser lalu coba lagi.", true);
-        return;
-      }
-      window.location.href = "daftar_laporan.html";
     });
   }
 
-  function initFilters() {
-    const list = document.getElementById("reports-list");
-    if (!list) return;
-    document.querySelectorAll("[data-report-filter]").forEach((button) => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll("[data-report-filter]").forEach((filterButton) => {
-          filterButton.classList.remove("active");
-          filterButton.setAttribute("aria-pressed", "false");
-        });
-        button.classList.add("active");
-        button.setAttribute("aria-pressed", "true");
-        list.dataset.filter = button.dataset.reportFilter;
-        renderReports();
-      });
-    });
-  }
+  /* ------------------------------------------------------------------ */
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (document.getElementById('report-form')) initFormLaporan();
 
-  function initSettings() {
-    const editProfile = document.getElementById("edit-profile");
-    if (editProfile) {
-      editProfile.addEventListener("click", () => {
-        const currentName = getProfile().name;
-        const name = window.prompt("Masukkan nama lengkap:", currentName);
-        if (name === null) return;
-        if (!name.trim()) {
-          showAppError("Nama tidak boleh kosong.");
-          return;
-        }
-        if (writeStorage(PROFILE_KEY, { name: name.trim() })) renderProfile();
-      });
+    const butuhData = document.getElementById('total-reports') || document.getElementById('reports-list');
+    if (butuhData) {
+      initFilter();
+      try {
+        await muatLaporan();
+        renderDashboard();
+        renderDaftar();
+      } catch (err) {
+        A.showToast(err.message, 'error');
+        const tbody = document.getElementById('dashboard-reports');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Gagal memuat laporan.</td></tr>';
+      }
     }
-
-    const passwordForm = document.getElementById("password-form");
-    if (passwordForm) {
-      document.querySelectorAll("[data-toggle-password]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const input = button.parentElement.querySelector("input");
-          const reveal = input.type === "password";
-          input.type = reveal ? "text" : "password";
-          button.setAttribute("aria-label", reveal ? "Sembunyikan kata sandi" : "Tampilkan kata sandi");
-          button.textContent = reveal ? "Sembunyikan" : "Lihat";
-        });
-      });
-      passwordForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const currentPassword = document.getElementById("current-password").value;
-        const newPassword = document.getElementById("new-password").value;
-        const confirmation = document.getElementById("confirm-password").value;
-        const feedback = document.getElementById("password-feedback");
-        if (!currentPassword || !newPassword || !confirmation) {
-          feedback.textContent = "Semua kolom kata sandi wajib diisi.";
-          feedback.className = "alert-box status-pill status-pill-danger";
-        } else if (newPassword.length < 8) {
-          feedback.textContent = "Kata sandi baru minimal 8 karakter.";
-          feedback.className = "alert-box status-pill status-pill-danger";
-        } else if (newPassword !== confirmation) {
-          feedback.textContent = "Konfirmasi kata sandi baru tidak sama.";
-          feedback.className = "alert-box status-pill status-pill-danger";
-        } else {
-          feedback.textContent = "Data sudah valid, tetapi perubahan kata sandi belum dapat disimpan karena layanan akun/backend belum terhubung.";
-          feedback.className = "alert-box status-pill status-pill-warning";
-        }
-        feedback.classList.remove("hidden");
-      });
-    }
-
-    const photoButton = document.querySelector("[data-profile-photo-button]");
-    if (photoButton) {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/png,image/jpeg";
-      input.className = "hidden";
-      const photoFeedback = document.getElementById("profile-photo-feedback");
-      input.addEventListener("change", () => {
-        const file = input.files[0];
-        if (!file) return;
-        if (file.size > 10 * 1024 * 1024 || !["image/png", "image/jpeg"].includes(file.type)) {
-          photoFeedback.textContent = "Foto profil harus berupa PNG/JPG dengan ukuran maksimal 10MB.";
-          photoFeedback.className = "status-pill status-pill-danger";
-          input.value = "";
-          return;
-        }
-        photoFeedback.textContent = `Foto dipilih: ${file.name}. Foto belum disimpan karena layanan profil belum terhubung.`;
-        photoFeedback.className = "text-muted";
-      });
-      photoButton.after(input);
-      photoButton.addEventListener("click", () => input.click());
-    }
-  }
-
-  renderProfile();
-  renderReports();
-  initReportForm();
-  initFilters();
-  initSettings();
-};
+  });
+})();

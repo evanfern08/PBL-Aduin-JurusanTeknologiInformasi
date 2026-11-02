@@ -143,11 +143,11 @@
           <div class="filter-pills" id="filterPills">
             <button type="button" class="filter-pill active" data-filter="Semua">Semua</button>
             <button type="button" class="filter-pill" data-filter="Menunggu Verifikasi">Menunggu Verifikasi</button>
-            <button type="button" class="filter-pill" data-filter="Disetujui">Disetujui</button>
-            <button type="button" class="filter-pill" data-filter="Ditolak">Ditolak</button>
+            <button type="button" class="filter-pill" data-filter="Diteruskan ke Pusat">Diteruskan ke Pusat</button>
             <button type="button" class="filter-pill" data-filter="Dalam Perbaikan">Dalam Perbaikan</button>
             <button type="button" class="filter-pill" data-filter="Menunggu Review Hasil">Menunggu Review Hasil</button>
             <button type="button" class="filter-pill" data-filter="Selesai">Selesai</button>
+            <button type="button" class="filter-pill" data-filter="Ditolak">Ditolak</button>
           </div>
         </div>
 
@@ -236,67 +236,10 @@
       </div>
     </div>
   </div>
-  <script src="verifikator.js"></script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/api.js"></script>
   <script src="../assets/js/app.js"></script>
-      <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const btnReminder = document.getElementById("btn-reminder");
-        const dropdown = document.getElementById("inbox-dropdown");
-        const listContainer = document.getElementById("inbox-list");
-        const badgeCount = document.getElementById("inbox-badge-count");
-
-        // 1. Fungsi untuk menghitung selisih hari
-        function hitungSelisihHari(tanggalLaporan) {
-          const tglLapor = new Date(tanggalLaporan);
-          const hariIni = new Date();
-          const selisihWaktu = hariIni - tglLapor;
-          return Math.floor(selisihWaktu / (1000 * 60 * 60 * 24)); // Konversi ke hari
-        }
-
-        // 2. Fungsi untuk mengambil data dan memfilter
-        const dataLaporan = JSON.parse(localStorage.getItem("aduin_laporan") || "[]"); 
-        
-        // Filter: Status "Diteruskan ke Pusat" DAN umur > 3 hari
-        const laporanMengendap = dataLaporan.filter(laporan => {
-          const umurHari = hitungSelisihHari(laporan.tanggal || laporan.date);
-          return laporan.status === "Diteruskan ke Pusat" && umurHari > 3;
-        });
-
-        // 3. Tampilkan jumlah di Badge (jika ada)
-        if (laporanMengendap.length > 0) {
-          badgeCount.textContent = laporanMengendap.length;
-          badgeCount.classList.remove("hidden");
-          
-          // Render list ke dalam dropdown
-          listContainer.innerHTML = laporanMengendap.map(laporan => {
-            const umur = hitungSelisihHari(laporan.tanggal || laporan.date);
-            return `
-              <div class="inbox-item" onclick="bukaDetail('${laporan.id}')">
-                <div class="inbox-item-title">${laporan.judul || laporan.title}</div>
-                <div class="inbox-item-loc">${laporan.lokasi || laporan.roomLabel}</div>
-                <span class="badge-mengendap">Mengendap > 3 Hari (${umur} hari)</span>
-              </div>
-            `;
-          }).join("");
-        } else {
-          badgeCount.classList.add("hidden"); // Sembunyikan badge jika kosong
-          listContainer.innerHTML = '<div style="padding: 16px; text-align: center; color: #737d92; font-size: 13px;">Tidak ada laporan yang mengendap.</div>';
-        }
-
-        // 4. Logika Buka/Tutup Dropdown saat tombol diklik
-        btnReminder.addEventListener("click", (e) => {
-          e.stopPropagation(); // Mencegah klik tembus ke dokumen
-          dropdown.classList.toggle("hidden");
-        });
-
-        // 5. Tutup dropdown jika user klik di luar area
-        document.addEventListener("click", (e) => {
-          if (!dropdown.contains(e.target) && e.target !== btnReminder) {
-            dropdown.classList.add("hidden");
-          }
-        });
-      });
-    </script>
+  <script src="verifikator.js"></script>
 </body>
 
 </html>
