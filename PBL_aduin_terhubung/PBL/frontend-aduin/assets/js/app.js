@@ -188,6 +188,7 @@
       ['Daftar Laporan', 'verifikator/riwayat.html', 'fa-solid fa-clipboard-list'],
       ['Statistik', 'verifikator/statistik.html', 'fa-solid fa-chart-simple'],
       ['Kelola Teknisi', 'verifikator/kelola_teknisi.html', 'fa-solid fa-users'],
+      ['Kelola Fasilitas', 'verifikator/kelola_fasilitas.html', 'fa-solid fa-building'],
       ['Pengaturan', 'pengaturan.html', 'fa-solid fa-gear'],
     ],
     Teknisi: [

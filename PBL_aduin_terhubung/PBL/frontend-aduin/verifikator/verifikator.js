@@ -677,4 +677,144 @@
       A.showToast(err.message, 'error');
     }
   });
+
+  /* ==========================================================================
+   ADUIN - KELOLA FASILITAS (verifikator)
+   Sementara: localStorage. Nanti: ganti isi FasilitasRepo saja.
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  const A = window.ADUIN;
+  const toast = (msg, tipe) => A.showToast(msg, tipe);
+  const esc = (s) => A.escapeHtml(s ?? '');
+
+  /* ---------- DATA LAYER (satu-satunya bagian yang diganti saat ada BE) ---------- */
+  const KEY = 'aduin_fasilitas';
+  const SEED = [
+    { id: 'F001', nama: 'Ruang Kelas Teori 1', deskripsi: 'Gedung TI Lt. 5, kapasitas 40 orang' },
+    { id: 'F002', nama: 'Lab Pemrograman 1', deskripsi: 'Gedung TI Lt. 7, 30 unit PC' },
+  ];
+
+  const FasilitasRepo = {
+    _baca() {
+      try {
+        const v = JSON.parse(localStorage.getItem(KEY));
+        if (Array.isArray(v)) return v;
+      } catch (e) { }
+      localStorage.setItem(KEY, JSON.stringify(SEED));
+      return [...SEED];
+    },
+    _tulis(data) { localStorage.setItem(KEY, JSON.stringify(data)); },
+
+    async list() { return this._baca(); },
+
+    async simpan({ id, nama, deskripsi }) {
+      const data = this._baca();
+      if (data.some((x) => x.id !== id && x.nama.toLowerCase() === nama.toLowerCase())) {
+        throw new Error(`Fasilitas "${nama}" sudah ada.`);
+      }
+      if (id) {
+        const item = data.find((x) => x.id === id);
+        if (item) { item.nama = nama; item.deskripsi = deskripsi; }
+      } else {
+        data.push({ id: 'F' + Date.now().toString(36).toUpperCase(), nama, deskripsi });
+      }
+      this._tulis(data);
+    },
+
+    async hapus(id) {
+      this._tulis(this._baca().filter((x) => x.id !== id));
+    },
+  };
+
+  /* Contoh versi backend nanti (pola sama dengan auth/profil.php di app.js):
+  const FasilitasRepo = {
+    async list()   { return (await A.API.get('fasilitas/list.php')).map(daftarKeFE); },
+    async simpan(d){ return A.API.post('fasilitas/simpan.php', { id_fasilitas: d.id, nama_fasilitas: d.nama, deskripsi: d.deskripsi }); },
+    async hapus(id){ return A.API.post('fasilitas/hapus.php', { id_fasilitas: id }); },
+  };
+  */
+
+  /* ---------- TAMPILAN ---------- */
+  let daftar = [];
+
+  async function muat() {
+    try {
+      daftar = await FasilitasRepo.list();
+      render();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  function render() {
+    const tbody = document.getElementById('tabelFasilitasBody');
+    if (!tbody) return;
+    if (!daftar.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:32px;color:var(--muted);">Belum ada data fasilitas.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = daftar.map((it, i) => `
+      <tr>
+        <td class="text-center" style="color:var(--muted);font-weight:700;">${i + 1}</td>
+        <td><span class="cell-name">${esc(it.nama)}</span></td>
+        <td><span class="cell-meta">${esc(it.deskripsi) || '-'}</span></td>
+        <td class="text-right">
+          <div class="action-group" style="justify-content:flex-end;">
+            <button type="button" class="btn-icon" title="Edit" onclick="bukaModalFasilitas('${esc(it.id)}')"
+              style="color:var(--blue-dark);border-color:#bfdbfe;background:#eff6ff;">✎</button>
+            <button type="button" class="btn-icon btn-icon-danger" title="Hapus" onclick="hapusFasilitas('${esc(it.id)}')">🗑</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  window.bukaModalFasilitas = function (id = null) {
+    const modal = document.getElementById('modalFasilitas');
+    if (!modal) return;
+    document.getElementById('formFasilitas').reset();
+    document.getElementById('fasilitasId').value = '';
+    document.getElementById('modalFasilitasTitle').textContent = 'Tambah Fasilitas';
+    if (id) {
+      const it = daftar.find((x) => x.id === id);
+      if (!it) return;
+      document.getElementById('modalFasilitasTitle').textContent = 'Edit Fasilitas';
+      document.getElementById('fasilitasId').value = it.id;
+      document.getElementById('namaFasilitas').value = it.nama;
+      document.getElementById('deskripsiFasilitas').value = it.deskripsi || '';
+    }
+    modal.classList.remove('hidden');
+  };
+
+  window.tutupModalFasilitas = function () {
+    document.getElementById('modalFasilitas')?.classList.add('hidden');
+  };
+
+  window.simpanFasilitas = async function (event) {
+    event.preventDefault();
+    const id = document.getElementById('fasilitasId').value;
+    const nama = document.getElementById('namaFasilitas').value.trim();
+    const deskripsi = document.getElementById('deskripsiFasilitas').value.trim();
+    if (!nama) { toast('Nama fasilitas wajib diisi.', 'error'); return; }
+    try {
+      await FasilitasRepo.simpan({ id, nama, deskripsi });
+      toast(id ? 'Data fasilitas berhasil diperbarui.' : 'Fasilitas baru berhasil ditambahkan.', 'success');
+      window.tutupModalFasilitas();
+      await muat();
+    } catch (err) { toast(err.message, 'error'); }
+  };
+
+  window.hapusFasilitas = async function (id) {
+    const it = daftar.find((x) => x.id === id);
+    if (!it || !confirm(`Yakin ingin menghapus fasilitas "${it.nama}"?`)) return;
+    try {
+      await FasilitasRepo.hapus(id);
+      toast(`Fasilitas "${it.nama}" telah dihapus.`, 'info');
+      await muat();
+    } catch (err) { toast(err.message, 'error'); }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('tabelFasilitasBody')) muat();
+  });
+})();
 })();
