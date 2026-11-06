@@ -10,11 +10,11 @@
 // itu aja si
 
 return [
-    'db_host'  => getenv('ADUIN_DB_HOST') ?: 'localhost',
+    'db_host'  => getenv('ADUIN_DB_HOST') ?: 'aws-0-ap-southeast-1.pooler.supabase.com',
     'db_port'  => getenv('ADUIN_DB_PORT') ?: '5432',
-    'db_name'  => getenv('ADUIN_DB_NAME') ?: 'aduin_db',
-    'db_user'  => getenv('ADUIN_DB_USER') ?: 'postgres',
-    'db_pass'  => getenv('ADUIN_DB_PASS') !== false ? getenv('ADUIN_DB_PASS') : 'y4sUd4hl4h',
+    'db_name'  => getenv('ADUIN_DB_NAME') ?: 'postgres',
+    'db_user'  => getenv('ADUIN_DB_USER') ?: 'postgres.fcobyapsxdkffpsqylgp',
+    'db_pass'  => getenv('ADUIN_DB_PASS') !== false ? getenv('ADUIN_DB_PASS') : '@Rachmah1237',
 
     // Cloudinary (jika salah satu kosong, foto disimpan lokal di folder uploads/)
     'cloudinary_cloud_name' => 'v3xqfjax',
