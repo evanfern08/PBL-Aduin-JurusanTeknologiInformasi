@@ -1,18 +1,16 @@
 <?php
-// ==================================================================
-// MODUL: TEKNISI - UPDATE TUGAS PERBAIKAN
-// Mata Kuliah: Pemrograman Web
-// Deskripsi: Teknisi memperbarui progres tugas yang ditugaskan kepadanya.
-// Method   : POST (multipart/form-data atau JSON)
-//   id_pengaduan   (atau ?id=)
-//   id_teknisi     id_user teknisi
-//   status_tugas   'Tugas Baru' | 'Sedang Dikerjakan' | 'Selesai'
-//   catatan_teknis (atau catatan)
-//   foto_sebelum, foto_hasil   (opsional, satu file masing-masing)
-//
-// Alur: 'Selesai' tidak langsung menutup laporan. Laporan berstatus
-//       "Menunggu Review Hasil" sampai verifikator menerima hasilnya.
-// ==================================================================
+// Izin akses domain cross-origin (CORS)
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Tangani request 'preflight' OPTIONS dari browser
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 
 require_once __DIR__ . '/../koneksi.php';
 require_once __DIR__ . '/../fungsi.php';

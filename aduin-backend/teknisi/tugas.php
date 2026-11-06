@@ -1,10 +1,16 @@
 <?php
-// ==================================================================
-// MODUL: TEKNISI - DAFTAR TUGAS PERBAIKAN
-// Deskripsi: Semua tugas milik satu teknisi (baru, dikerjakan, selesai).
-// Parameter: ?id_teknisi=5  (id_user teknisi). Tanpa parameter = semua tugas.
-// Field status_tugas: 'Tugas Baru' | 'Sedang Dikerjakan' | 'Selesai'
-// ==================================================================
+// Izin akses domain cross-origin (CORS)
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Tangani request 'preflight' OPTIONS dari browser
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 
 require_once __DIR__ . '/../koneksi.php';
 require_once __DIR__ . '/../fungsi.php';
@@ -32,3 +38,5 @@ try {
 } catch (PDOException $e) {
     server_error($e, 'Gagal memuat daftar tugas teknisi.');
 }
+
+?>

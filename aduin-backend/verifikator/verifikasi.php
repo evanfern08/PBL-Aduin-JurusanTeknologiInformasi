@@ -1,24 +1,16 @@
 <?php
-// ==================================================================
-// MODUL: VERIFIKATOR - PROSES VERIFIKASI PENGADUAN
-// Mata Kuliah: Pemrograman Web
-// Deskripsi: Semua keputusan Sekjur/Kajur atas sebuah pengaduan.
-// Method   : POST (JSON atau form)
-//   id_pengaduan (atau ?id=), id_verifikator, aksi, + parameter sesuai aksi
-//
-//   aksi              syarat status saat ini     parameter tambahan       status baru
-//   ----------------  -------------------------  -----------------------  ----------------------
-//   setujui_teknisi   Menunggu Verifikasi        id_teknisi               Diproses (Dalam Perbaikan)
-//   teruskan_pusat    Menunggu Verifikasi        -                        Diteruskan ke Pusat
-//   tolak             Menunggu Verifikasi        alasan                   Ditolak
-//   batal_tolak       Ditolak                    alasan                   Menunggu Verifikasi
-//   terima_hasil      Menunggu Review Hasil      -                        Selesai
-//   tolak_hasil       Menunggu Review Hasil      alasan                   Diproses (Dalam Perbaikan)
-//   selesai_pusat     Diteruskan ke Pusat        -                        Selesai
-//
-// Kompatibilitas: parameter lama "status" (Diproses/Disetujui/Ditolak/
-//                 Diteruskan ke Pusat/Selesai) tetap dikenali.
-// ==================================================================
+// Izin akses domain cross-origin (CORS)
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Tangani request 'preflight' OPTIONS dari browser
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 
 require_once __DIR__ . '/../koneksi.php';
 require_once __DIR__ . '/../fungsi.php';
