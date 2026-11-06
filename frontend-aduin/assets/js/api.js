@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const CFG = window.ADUIN_CONFIG || { API_BASE: 'http://localhost:8000' };
+  const CFG = window.ADUIN_CONFIG || { API_BASE: 'https://pbl-aduin-jurusanteknologiinformasi-eta.vercel.app' };
   const API_BASE = CFG.API_BASE.replace(/\/+$/, '');
 
   /* Lokasi akar frontend (folder yang berisi login.html), dihitung dari lokasi api.js */
