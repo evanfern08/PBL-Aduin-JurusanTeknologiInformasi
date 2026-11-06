@@ -7,4 +7,6 @@
  * Jika backend ada di alamat lain (mis. XAMPP: http://localhost/aduin-backend),
  * ganti nilai API_BASE di bawah, TANPA garis miring di akhir.
  */
-const API_BASE_URL = "pbl-aduin-jurusanteknologiinformasi-aduin-backend-gi3v9slre.vercel.app";
+   window.ADUIN_CONFIG = {
+     API_BASE: 'pbl-aduin-jurusanteknologiinformasi-aduin-backend-gi3v9slre.vercel.app',
+   };
