@@ -23,7 +23,8 @@ return [
     'cloudinary_folder'     => 'aduin',
 
     // true = pesan error teknis (SQL) ikut dikirim ke browser. Matikan saat demo/produksi.
-    'debug'    => getenv('ADUIN_DEBUG') === '1',
+    // 'debug'    => getenv('ADUIN_DEBUG') === '1',
+        'debug'    => true,
 
     // Zona waktu sesi database, supaya NOW() konsisten (WIB).
     'timezone' => 'Asia/Jakarta',
