@@ -6,9 +6,7 @@
   'use strict';
 
   // GANTI baris konfigurasi CFG menjadi ini:
-const CFG = window.ADUIN_CONFIG || { API_BASE: 'https://pbl-aduin-jurusanteknologiinformasi-aduin-backend-gi3v9slre.vercel.app' };
-const API_BASE = CFG.API_BASE.replace(/\/+$/, '');
-
+const API_BASE = 'https://pbl-aduin-jurusanteknologiinformasi-eta.vercel.app';
   /* Lokasi akar frontend (folder yang berisi login.html), dihitung dari lokasi api.js */
   const ROOT = (function () {
     const s = document.currentScript && document.currentScript.src;

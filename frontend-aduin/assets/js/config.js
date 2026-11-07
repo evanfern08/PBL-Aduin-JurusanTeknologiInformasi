@@ -7,9 +7,6 @@
  * Jika backend ada di alamat lain (mis. XAMPP: http://localhost/aduin-backend),
  * ganti nilai API_BASE di bawah, TANPA garis miring di akhir.
  */
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-// Gunakan URL Vercel BE untuk production
-export const BASE_URL = isLocal 
-    ? 'http://localhost:8000' 
-    : 'https://pbl-aduin-jurusanteknologiinformasi-aduin-backend-gi3v9slre.vercel.app';
+window.ADUIN_CONFIG = {
+  API_BASE: 'https://pbl-aduin-jurusanteknologiinformasi-eta.vercel.app'
+};
