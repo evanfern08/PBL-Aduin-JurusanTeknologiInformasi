@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__ . '/../koneksi.php';
+require_once __DIR__ . '/../fungsi.php';
+
+cors();
+require_method('POST');
 // Izin akses domain cross-origin (CORS)
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
