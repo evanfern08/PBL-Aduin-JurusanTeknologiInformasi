@@ -7,7 +7,7 @@
  * Jika tidak diatur, nilai default di bawah yang dipakai.
  */
 
-// itu aja si
+// itu aja s
 
 return [
     'db_host'  => getenv('ADUIN_DB_HOST') ?: 'db.fcobyapsxdkffpsqylgp.supabase.co',
