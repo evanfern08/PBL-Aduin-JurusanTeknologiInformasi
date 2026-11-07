@@ -1,4 +1,15 @@
 <?php
+// 1. TAMBAHKAN BLOK CORS INI DI BARIS PALING ATAS
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Tangani request 'preflight' OPTIONS dari browser langsung di pintu masuk
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 /**
  * Pintu masuk tunggal untuk Vercel (vercel-php).
  * Semua permintaan /api/auth/login.php, /master/ruangan.php, dst. diarahkan ke sini,
