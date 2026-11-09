@@ -90,14 +90,16 @@
     if (s === 'Dikembalikan ke Pelapor' && r.alasan_penolakan) {
       html += '<p style="font-size:12px;color:#b91c1c;margin-top:8px;">Alasan dikembalikan: ' + esc(r.alasan_penolakan) + '</p>';
     }
-    if (r.foto_list.length) {
-      html += '<div class="report-photo-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">' +
-        r.foto_list.slice(0, 3).map((f) => '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Foto laporan" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">').join('') +
-        (r.foto_list.length > 3 ? '<span class="more-photos-badge">+' + (r.foto_list.length - 3) + '</span>' : '') + '</div>';
+        if (r.foto_list.length) {
+      html += '<div class="report-photo-grid">' +
+        AduinGallery.render(r.foto_list.map((f) => A.fileUrl(f)), { maxVisible: 4 }) + '</div>';
     }
     html += progresLaporan(r);
     card.innerHTML = html;
-    card.addEventListener('click', () => bukaDetail(r));
+        card.addEventListener('click', (e) => {
+      if (e.target.closest('.aduin-gallery__item')) return;   // klik foto = buka viewer, bukan modal
+      bukaDetail(r);
+    });
     return card;
   }
 
@@ -111,6 +113,8 @@
       document.body.append(modal);
     }
     const s = A.statusUntukPelapor(r.status_ui);
+    const urlBukti = r.foto_list.map((f) => A.fileUrl(f));              // TAMBAH
+    const urlHasil = (r.foto_hasil_list || []).map((f) => A.fileUrl(f)); // TAMBAH
     modal.innerHTML =
       '<div class="modal-box" style="max-width:560px;max-height:90vh;overflow:auto;">' +
       '<div class="modal-header"><div><h3 class="modal-title">' + esc(r.judul_laporan) + '</h3>' +
@@ -122,11 +126,13 @@
       '<p><strong>Dilaporkan:</strong> ' + A.tanggalJam(r.tanggal_lapor) + '</p>' +
       '<p><strong>Deskripsi:</strong> ' + esc(r.deskripsi) + '</p>' +
       (r.alasan_penolakan ? '<p style="color:#b91c1c;"><strong>Alasan dikembalikan:</strong> ' + esc(r.alasan_penolakan) + '</p>' : '') +
-      '<p><strong>Dokumentasi foto (' + r.foto_list.length + '):</strong></p>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">' +
-      r.foto_list.map((f, i) => '<a href="' + esc(A.fileUrl(f)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(f)) +
-        '" alt="Dokumentasi ' + (i + 1) + '" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"></a>').join('') +
-      '</div></div></div>';
+      '<p><strong>Foto bukti pelapor (' + urlBukti.length + '):</strong></p>' +
+      AduinGallery.render(urlBukti, { size: 'lg', maxVisible: 6, emptyText: 'Tidak ada foto.' }) +
+      (urlHasil.length
+        ? '<p><strong>Foto hasil pengerjaan (' + urlHasil.length + '):</strong></p>' +
+          AduinGallery.render(urlHasil, { size: 'lg', maxVisible: 6 })
+        : '') +
+      '</div></div>';
     modal.classList.remove('hidden');
     document.getElementById('close-modal').onclick = () => modal.classList.add('hidden');
   }
@@ -229,27 +235,32 @@
       gambarPratinjau();
     }
 
+        let urlPratinjau = [];
     function gambarPratinjau() {
+      urlPratinjau.forEach((u) => URL.revokeObjectURL(u));
       previewList.innerHTML = '';
-      if (!fotoDipilih.length) { pesanFoto('', false); return; }
+      if (!fotoDipilih.length) { urlPratinjau = []; pesanFoto('', false); return; }
+      urlPratinjau = fotoDipilih.map((f) => URL.createObjectURL(f));
       fotoDipilih.forEach((file, index) => {
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'position:relative;display:inline-block;margin:5px;';
+        const li = document.createElement('li');
+        li.className = 'aduin-uploader__thumb';
         const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        img.style.cssText = 'width:65px;height:65px;object-fit:cover;border-radius:8px;border:1px solid var(--line);';
+        img.src = urlPratinjau[index];
+        img.alt = file.name;
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => AduinGallery.open(urlPratinjau, index));
         const x = document.createElement('button');
         x.type = 'button';
-        x.textContent = 'x';
-        x.setAttribute('aria-label', 'Hapus foto');
-        x.style.cssText = 'position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;font-weight:bold;cursor:pointer;';
+        x.className = 'aduin-uploader__remove';
+        x.setAttribute('aria-label', 'Hapus ' + file.name);
+        x.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
         x.onclick = () => {
           fotoDipilih.splice(index, 1);
           if (fotoDipilih.length) pesanFoto(fotoDipilih.length + ' foto berhasil dipilih.', false);
           gambarPratinjau();
         };
-        wrap.append(img, x);
-        previewList.appendChild(wrap);
+        li.append(img, x);
+        previewList.appendChild(li);
       });
     }
 
