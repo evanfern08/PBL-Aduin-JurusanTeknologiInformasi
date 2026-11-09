@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/gallery.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="dashboard-body">
@@ -16,18 +17,14 @@
     <aside class="sidebar-blue" aria-label="Navigasi pelapor">
       <div class="sidebar-top">
         <a href="index.html" class="sidebar-brand" aria-label="ADUIN, kembali ke dashboard">
-          <span class="sidebar-brand-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 9h.01M15 9h.01"></path>
-            </svg>
-          </span>
+          <span class="sidebar-brand-icon" aria-hidden="true"><i class="fa-solid fa-building-columns"></i></span>
           <span><span class="sidebar-brand-title">ADUIN</span><span class="sidebar-brand-subtitle">Facility Reporting</span></span>
         </a>
         <nav class="sidebar-nav" aria-label="Menu utama">
-          <a href="index.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg><span>Dashboard</span></a>
-          <a href="laporan.html" class="nav-link active" aria-current="page"><span aria-hidden="true">＋</span><span>Buat Laporan</span></a>
-          <a href="daftar_laporan.html" class="nav-link"><span aria-hidden="true">☷</span><span>Daftar Laporan</span></a>
-          <a href="../pengaturan.html?role=pelapor" class="nav-link"><span aria-hidden="true">⚙</span><span>Pengaturan</span></a>
+          <a href="index.html" class="nav-link"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i><span>Dashboard</span></a>
+          <a href="laporan.html" class="nav-link active" aria-current="page"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Buat Laporan</span></a>
+          <a href="daftar_laporan.html" class="nav-link"><i class="fa-solid fa-list" aria-hidden="true"></i><span>Daftar Laporan</span></a>
+          <a href="../pengaturan.html?role=pelapor" class="nav-link"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Pengaturan</span></a>
         </nav>
       </div>
       <div class="sidebar-bottom">
@@ -35,7 +32,7 @@
           <span data-profile-initials class="user-avatar-sm" aria-hidden="true">RN</span>
           <div class="sidebar-user-info"><p data-profile-name class="sidebar-user-name">Rachmah Nur Chotimah</p><p class="sidebar-user-role">Mahasiswa</p></div>
         </div>
-        <a href="../login.html" class="btn-logout"><span aria-hidden="true">↪</span><span>Keluar</span></a>
+        <a href="../login.html" class="btn-logout"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Keluar</span></a>
       </div>
     </aside>
 
@@ -95,7 +92,7 @@
                 <p class="text-muted">Format PNG atau JPG, maksimal 10 MB. Maksimal 5 foto.</p>
                 <input id="report-photo" type="file" accept="image/png,image/jpeg" multiple class="hidden">
                 <button id="choose-report-photo" type="button" class="btn btn-ghost">Pilih foto</button>
-                <div id="photo-preview-list" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px;"></div>
+                <ul id="photo-preview-list" class="aduin-uploader__list"></ul>
                 <p id="photo-feedback" class="text-muted" aria-live="polite"></p>
               </div>
             </div>
@@ -113,6 +110,7 @@
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/api.js"></script>
   <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/gallery.js"></script>
   <script src="pelapor.js"></script>
 </body>
 </html>

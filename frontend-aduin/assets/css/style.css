@@ -300,6 +300,8 @@ button { font-family: inherit; cursor: pointer; }
   text-align: center;
   flex-shrink: 0;
 }
+.btn-logout i { width: 16px; text-align: center; font-size: 14px; }
+.sidebar-brand-icon i { font-size: 18px; }
 
 
 /* --------------------------------------------------------------------------
