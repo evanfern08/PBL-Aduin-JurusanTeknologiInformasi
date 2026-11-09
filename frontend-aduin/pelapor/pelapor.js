@@ -91,12 +91,24 @@
       html += '<p style="font-size:12px;color:#b91c1c;margin-top:8px;">Alasan dikembalikan: ' + esc(r.alasan_penolakan) + '</p>';
     }
     if (r.foto_list.length) {
-      html += '<div class="report-photo-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">' +
-        r.foto_list.slice(0, 3).map((f) => '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Foto laporan" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);">').join('') +
-        (r.foto_list.length > 3 ? '<span class="more-photos-badge">+' + (r.foto_list.length - 3) + '</span>' : '') + '</div>';
+      const MAKS_THUMB = 4;
+      const thumbs = r.foto_list.slice(0, MAKS_THUMB).map(function (f, i) {
+        return '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Foto laporan ' + (i + 1) + '" data-photo-index="' + i + '">';
+      }).join('');
+      const sisa = r.foto_list.length - MAKS_THUMB;
+      const more = sisa > 0 ? '<div class="gallery-thumb-more" data-photo-index="' + MAKS_THUMB + '">+' + sisa + '</div>' : '';
+      html += '<div class="gallery-thumb-grid">' + thumbs + more + '</div>';
     }
     html += progresLaporan(r);
     card.innerHTML = html;
+    // Thumbnail foto → buka lightbox (stopPropagation agar tidak trigger bukaDetail)
+    card.querySelectorAll('[data-photo-index]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const idx = parseInt(el.dataset.photoIndex, 10) || 0;
+        bukaLightbox(r.foto_list, idx);
+      });
+    });
     card.addEventListener('click', () => bukaDetail(r));
     return card;
   }
@@ -123,12 +135,111 @@
       '<p><strong>Deskripsi:</strong> ' + esc(r.deskripsi) + '</p>' +
       (r.alasan_penolakan ? '<p style="color:#b91c1c;"><strong>Alasan dikembalikan:</strong> ' + esc(r.alasan_penolakan) + '</p>' : '') +
       '<p><strong>Dokumentasi foto (' + r.foto_list.length + '):</strong></p>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">' +
-      r.foto_list.map((f, i) => '<a href="' + esc(A.fileUrl(f)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(f)) +
-        '" alt="Dokumentasi ' + (i + 1) + '" style="width:100%;height:100px;object-fit:cover;border-radius:8px;"></a>').join('') +
-      '</div></div></div>';
-    modal.classList.remove('hidden');
-    document.getElementById('close-modal').onclick = () => modal.classList.add('hidden');
+      (r.foto_list.length
+        ? '<div class="gallery-thumb-grid" style="max-width:100%;">' +
+          r.foto_list.map((f, i) => '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Dokumentasi ' + (i + 1) + '" data-detail-photo-index="' + i + '">').join('') +
+          '</div>'
+        : '<p class="text-muted">Tidak ada foto.</p>') +
+      '</div></div>';
+      modal.classList.remove('hidden');
+      document.getElementById('close-modal').onclick = () => modal.classList.add('hidden');
+      // Foto di modal detail → lightbox
+      modal.querySelectorAll('[data-detail-photo-index]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          const idx = parseInt(el.dataset.detailPhotoIndex, 10) || 0;
+          bukaLightbox(r.foto_list, idx);
+        });
+    });
+  }
+    /* ------------------------------------------------------------------
+     Lightbox / carousel galeri foto
+     ------------------------------------------------------------------ */
+  let lightboxState = { fotos: [], index: 0, el: null };
+
+  function bukaLightbox(fotos, startIndex) {
+    if (!fotos || !fotos.length) return;
+
+    // Buat / ambil container lightbox
+    let box = document.getElementById('foto-lightbox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'foto-lightbox';
+      box.className = 'gallery-lightbox hidden';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', 'Galeri foto laporan');
+      document.body.append(box);
+    }
+
+    lightboxState.fotos = fotos;
+    lightboxState.index = Math.max(0, Math.min(startIndex || 0, fotos.length - 1));
+    lightboxState.el = box;
+
+    renderLightbox();
+    box.classList.remove('hidden');
+
+    // Keyboard
+    document.addEventListener('keydown', lightboxKeyHandler);
+  }
+
+  function renderLightbox() {
+    const box = lightboxState.el;
+    if (!box) return;
+    const fotos = lightboxState.fotos;
+    const i = lightboxState.index;
+    const total = fotos.length;
+
+    const dots = fotos.map(function (_, idx) {
+      return '<button type="button" class="gallery-dot' + (idx === i ? ' active' : '') +
+        '" data-dot-index="' + idx + '" aria-label="Foto ' + (idx + 1) + '"></button>';
+    }).join('');
+
+    box.innerHTML =
+      '<button type="button" class="gallery-lightbox-close" id="lightbox-close" aria-label="Tutup galeri">&times;</button>' +
+      '<div class="gallery-lightbox-stage">' +
+        (total > 1 ? '<button type="button" class="gallery-nav-btn gallery-nav-prev" id="lightbox-prev" aria-label="Foto sebelumnya">&#8249;</button>' : '') +
+        '<img class="gallery-lightbox-img" id="lightbox-img" src="' + esc(A.fileUrl(fotos[i])) + '" alt="Foto ' + (i + 1) + ' dari ' + total + '">' +
+        (total > 1 ? '<button type="button" class="gallery-nav-btn gallery-nav-next" id="lightbox-next" aria-label="Foto berikutnya">&#8250;</button>' : '') +
+      '</div>' +
+      '<p class="gallery-lightbox-caption">Foto ' + (i + 1) + ' dari ' + total + '</p>' +
+      (total > 1 ? '<div class="gallery-lightbox-dots">' + dots + '</div>' : '');
+
+    // Bind
+    box.querySelector('#lightbox-close').onclick = tutupLightbox;
+    const prev = box.querySelector('#lightbox-prev');
+    const next = box.querySelector('#lightbox-next');
+    if (prev) prev.onclick = function () { lightboxNav(-1); };
+    if (next) next.onclick = function () { lightboxNav(1); };
+    box.querySelectorAll('[data-dot-index]').forEach(function (dot) {
+      dot.onclick = function () {
+        lightboxState.index = parseInt(dot.dataset.dotIndex, 10) || 0;
+        renderLightbox();
+      };
+    });
+
+    // Klik di luar stage → tutup
+    box.onclick = function (e) {
+      if (e.target === box) tutupLightbox();
+    };
+  }
+
+  function lightboxNav(delta) {
+    const total = lightboxState.fotos.length;
+    if (!total) return;
+    lightboxState.index = (lightboxState.index + delta + total) % total;
+    renderLightbox();
+  }
+
+  function tutupLightbox() {
+    const box = document.getElementById('foto-lightbox');
+    if (box) box.classList.add('hidden');
+    document.removeEventListener('keydown', lightboxKeyHandler);
+  }
+
+  function lightboxKeyHandler(e) {
+    if (e.key === 'Escape') tutupLightbox();
+    else if (e.key === 'ArrowLeft') lightboxNav(-1);
+    else if (e.key === 'ArrowRight') lightboxNav(1);
   }
 
   function renderDaftar() {
@@ -229,27 +340,37 @@
       gambarPratinjau();
     }
 
-    function gambarPratinjau() {
+        function gambarPratinjau() {
       previewList.innerHTML = '';
+      previewList.className = 'gallery-upload-grid';
       if (!fotoDipilih.length) { pesanFoto('', false); return; }
       fotoDipilih.forEach((file, index) => {
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'position:relative;display:inline-block;margin:5px;';
+        const li = document.createElement('li');
+        li.className = 'gallery-upload-item';
+
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
-        img.style.cssText = 'width:65px;height:65px;object-fit:cover;border-radius:8px;border:1px solid var(--line);';
+        img.alt = 'Pratinjau foto ' + (index + 1);
+
+        const idx = document.createElement('span');
+        idx.className = 'gallery-upload-index';
+        idx.textContent = (index + 1) + '/' + fotoDipilih.length;
+
         const x = document.createElement('button');
         x.type = 'button';
-        x.textContent = 'x';
-        x.setAttribute('aria-label', 'Hapus foto');
-        x.style.cssText = 'position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;font-weight:bold;cursor:pointer;';
+        x.className = 'gallery-upload-remove';
+        x.textContent = '×';
+        x.setAttribute('aria-label', 'Hapus foto ' + (index + 1));
         x.onclick = () => {
+          URL.revokeObjectURL(img.src);
           fotoDipilih.splice(index, 1);
           if (fotoDipilih.length) pesanFoto(fotoDipilih.length + ' foto berhasil dipilih.', false);
+          else pesanFoto('Belum ada foto dipilih.', false);
           gambarPratinjau();
         };
-        wrap.append(img, x);
-        previewList.appendChild(wrap);
+
+        li.append(img, x, idx);
+        previewList.appendChild(li);
       });
     }
 

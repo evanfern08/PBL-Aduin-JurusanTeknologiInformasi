@@ -66,6 +66,229 @@ a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
 
 .hidden { display: none !important; }
+
+/* ==========================================================================
+   GALLERY MULTI FOTO (UPLOAD PREVIEW + DETAIL VIEW)
+   ========================================================================== */
+
+/* --- Preview upload (form buat laporan) --- */
+.gallery-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  list-style: none;
+  padding: 0;
+}
+
+.gallery-upload-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #f1f5f9;
+}
+
+.gallery-upload-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-upload-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.gallery-upload-remove:hover {
+  background: #991b1b;
+  transform: scale(1.1);
+}
+
+.gallery-upload-index {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(9, 20, 65, 0.75);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* --- Preview di kartu riwayat (daftar laporan) --- */
+.gallery-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  margin: 10px 0;
+  max-width: 360px;
+}
+
+.gallery-thumb-grid .thumb-preview {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  cursor: zoom-in;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gallery-thumb-grid .thumb-preview:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(9, 20, 65, 0.15);
+}
+
+.gallery-thumb-more {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  background: rgba(9, 20, 65, 0.75);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--line);
+}
+
+/* --- Lightbox / carousel detail foto --- */
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(6, 14, 45, 0.92);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.gallery-lightbox.hidden { display: none !important; }
+
+.gallery-lightbox-stage {
+  position: relative;
+  max-width: min(900px, 92vw);
+  max-height: 78vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-lightbox-img {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  background: #000;
+}
+
+.gallery-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.gallery-nav-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.gallery-nav-prev { left: -56px; }
+.gallery-nav-next { right: -56px; }
+
+.gallery-lightbox-caption {
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.gallery-lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-lightbox-close:hover { background: rgba(255, 255, 255, 0.3); }
+
+.gallery-lightbox-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 90vw;
+}
+
+.gallery-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.gallery-dot.active {
+  background: var(--blue);
+  transform: scale(1.3);
+}
+
+@media (max-width: 560px) {
+  .gallery-nav-prev { left: -8px; }
+  .gallery-nav-next { right: -8px; }
+  .gallery-nav-btn { width: 38px; height: 38px; font-size: 17px; }
+}
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-muted { color: var(--muted); font-size: 12px; }
@@ -86,7 +309,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* --------------------------------------------------------------------------
-   3. LAYOUT (sidebar + main)
+   LAYOUT (sidebar + main)
    -------------------------------------------------------------------------- */
 .dashboard-wrapper,
 .app-layout,
@@ -97,7 +320,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* --------------------------------------------------------------------------
-   4. SIDEBAR
+   SIDEBAR
    -------------------------------------------------------------------------- */
 .sidebar-blue {
   display: flex;
