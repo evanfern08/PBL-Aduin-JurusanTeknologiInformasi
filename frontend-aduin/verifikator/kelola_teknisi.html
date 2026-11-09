@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Teknisi - ADUIN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="dashboard-body">
+
+    <div class="dashboard-wrapper">
+
+        <!-- SIDEBAR KIRI -->
+        <aside class="sidebar-blue" id="sidebarBlue">
+            <div class="sidebar-top">
+                <a href="index.html" class="sidebar-brand">
+                    <div class="sidebar-brand-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 9h.01M15 9h.01">
+                            </path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="sidebar-brand-title">ADUIN</h1>
+                        <p class="sidebar-brand-subtitle">Facility Reporting</p>
+                    </div>
+                </a>
+
+                <nav class="sidebar-nav">
+                    <a href="index.html" class="nav-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="riwayat.html" class="nav-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <span>Daftar Laporan</span>
+                    </a>
+                    <a href="statistik.html" class="nav-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10" />
+                            <line x1="12" y1="20" x2="12" y2="4" />
+                            <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                        <span>Statistik</span>
+                    </a>
+                    <a href="kelola_teknisi.html" class="nav-link active">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>Kelola Teknisi</span>
+                    </a>
+                    <a href="kelola_sarpras.html" class="nav-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        <span>Kelola Sarpras</span>
+                    </a>
+                    <a href="../pengaturan.html" class="nav-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                        <span>Pengaturan</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Profil Bawah -->
+            <div class="sidebar-bottom">
+                <div class="sidebar-user-card">
+                    <!-- Ada class role-verifikator biar warnanya orange -->
+                    <div class="user-avatar-sm role-verifikator">MA</div>
+                    <div class="sidebar-user-info">
+                        <h4 class="sidebar-user-name">Mungki Astiningrum, S.T., M.Kom.</h4>
+                        <p class="sidebar-user-role">Kepala Jurusan</p>
+                    </div>
+                </div>
+                <a href="../login.html" class="btn-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Keluar</span>
+                </a>
+            </div>
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content scroll-area">
+            <header class="content-header">
+                <div>
+                    <span class="header-breadcrumb">Admin Verifikasi / <strong>Kelola Teknisi</strong></span>
+                    <h1 class="header-title">Kelola Data Teknisi</h1>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- Header Action -->
+                <div class="glass-card"
+                    style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 18px 24px;">
+                    <div>
+                        <h2 class="card-title" style="margin: 0;">Daftar Teknisi Sarpras</h2>
+                        <p class="card-subtitle">Kelola data teknisi, spesialisasi, dan status ketersediaan.</p>
+                    </div>
+                    <button type="button" class="btn btn-success" onclick="bukaModalTeknisi()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                        Tambah Teknisi Baru
+                    </button>
+                </div>
+
+                <!-- Table -->
+                <div class="glass-card" style="padding: 0; overflow: hidden;">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 60px;">No</th>
+                                    <th style="width: 30%;">Nama Teknisi</th> <!-- Kunci lebar 30% -->
+                                    <th style="width: 15%;">ID / NIP</th>
+                                    <th style="width: 20%;">Spesialisasi</th>
+                                    <th style="width: 15%;">Status</th>
+                                    <th style="width: 12%;">Tugas Berjalan</th>
+                                    <th class="text-right" style="width: 100px;">Aksi</th> <!-- Kunci 100px -->
+                                </tr>
+                            </thead>
+                            <tbody id="tabelTeknisiBody">
+                                <!-- Diisi via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL TAMBAH / EDIT TEKNISI -->
+    <div id="modalTeknisi" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modalTeknisiTitle">Tambah Teknisi Baru</h3>
+                    <span class="modal-subtitle">Lengkapi data di bawah</span>
+                </div>
+                <button type="button" class="modal-close" onclick="tutupModalTeknisi()">✕</button>
+            </div>
+
+            <form id="formTeknisi" onsubmit="simpanTeknisi(event)" class="modal-body">
+                <input type="hidden" id="teknisiId" />
+
+                <div class="form-group">
+                    <label class="form-label" for="namaTeknisi">Nama Lengkap *</label>
+                    <input type="text" id="namaTeknisi" class="glass-input" placeholder="Contoh: Joko" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="emailTeknisi">Email Login *</label>
+                    <input type="email" id="emailTeknisi" class="glass-input" placeholder="nama@polinema.ac.id"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="passwordTeknisi">Password *</label>
+                    <input type="password" id="passwordTeknisi" class="glass-input" placeholder="Minimal 8 karakter"
+                        autocomplete="new-password" minlength="8">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="nipTeknisi">ID / NIP *</label>
+                    <input type="text" id="nipTeknisi" class="glass-input" placeholder="Contoh: E0010" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="spesialisasiTeknisi">Spesialisasi *</label>
+                    <select id="spesialisasiTeknisi" class="glass-input" required>
+                        <option value="">-- Pilih Spesialisasi --</option>
+                        <option value="AC / Pendingin">AC / Pendingin</option>
+                        <option value="Kelistrikan">Kelistrikan</option>
+                        <option value="Jaringan / IT">Jaringan / IT</option>
+                        <option value="Furnitur">Furnitur</option>
+                        <option value="Umum">Umum</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="statusTeknisi">Status *</label>
+                    <select id="statusTeknisi" class="glass-input" required>
+                        <option value="Aktif">Aktif</option>
+                        <option value="Cuti">Cuti</option>
+                        <option value="Nonaktif">Nonaktif</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="tutupModalTeknisi()">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/api.js"></script>
+    <script src="../assets/js/app.js"></script>
+    <script src="verifikator.js"></script>
+</body>
+
+</html>
