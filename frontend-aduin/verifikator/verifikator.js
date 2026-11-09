@@ -17,6 +17,7 @@
 
   let laporan = [];
   let teknisiAktif = [];
+  const laporanTerpilihUntukEkspor = new Set();
 
   async function muatLaporan() {
     const data = await API.get('verifikator/dashboard.php');
@@ -105,20 +106,109 @@
     setText('metricDitolak', hit((l) => l.status === 'Ditolak'));
   }
 
+  function perbaruiKontrolEkspor() {
+    const tbody = $('verifikatorTableBody');
+    const selectAll = $('selectAllReadyReports');
+    const tombolEkspor = $('exportSelectedReports');
+    const terlihat = tbody ? [...tbody.querySelectorAll('input[data-select-report]')].filter((input) =>
+      input.closest('tr').style.display !== 'none') : [];
+    const tercentang = terlihat.filter((input) => input.checked).length;
+
+    if (selectAll) {
+      selectAll.checked = terlihat.length > 0 && tercentang === terlihat.length;
+      selectAll.indeterminate = tercentang > 0 && tercentang < terlihat.length;
+    }
+    if (tombolEkspor) tombolEkspor.disabled = laporanTerpilihUntukEkspor.size === 0;
+    setText('selectedReportCount', laporanTerpilihUntukEkspor.size + ' laporan dipilih');
+  }
+
+  function eksporLaporanTerpilih() {
+    const terpilih = laporan.filter((l) =>
+      l.status === 'Menunggu Verifikasi' && laporanTerpilihUntukEkspor.has(l.id_pengaduan));
+    if (!terpilih.length) {
+      A.showToast('Pilih minimal satu laporan yang siap diteruskan ke pusat.', 'error');
+      return;
+    }
+
+    const amanCsv = (nilai) => {
+      let teks = String(nilai === null || nilai === undefined ? '' : nilai);
+      if (/^[=+\-@]/.test(teks)) teks = "'" + teks;
+      return '"' + teks.replace(/"/g, '""') + '"';
+    };
+    const kolom = ['ID Pengaduan', 'Judul', 'Kategori', 'Ruangan', 'Lantai', 'Pelapor', 'Identitas Pelapor', 'Tanggal Lapor', 'Status', 'Deskripsi', 'Foto Bukti', 'Catatan Teknisi', 'Foto Sebelum', 'Foto Hasil'];
+    const baris = terpilih.map((l) => [
+      l.id_pengaduan, l.judul_laporan, l.nama_kategori, l.nama_ruangan, l.lantai,
+      l.nama_pelapor, l.identitas_pelapor, l.tanggal_lapor, l.status, l.deskripsi,
+      (l.foto_list || []).map((foto) => A.fileUrl(foto)).join(' | '), l.catatan_teknisi,
+      l.foto_sebelum ? A.fileUrl(l.foto_sebelum) : '',
+      l.foto_hasil ? A.fileUrl(l.foto_hasil) : '',
+    ]);
+    const csv = '\uFEFF' + [kolom, ...baris].map((row) => row.map(amanCsv).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const tautan = document.createElement('a');
+    tautan.href = url;
+    tautan.download = 'laporan-siap-diteruskan-' + A.tanggalIso(new Date().toISOString()) + '.csv';
+    document.body.appendChild(tautan);
+    tautan.click();
+    tautan.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    A.showToast(terpilih.length + ' laporan berhasil diekspor.', 'success');
+  }
+
+  function ikatKontrolEkspor() {
+    const tbody = $('verifikatorTableBody');
+    const selectAll = $('selectAllReadyReports');
+    const tombolEkspor = $('exportSelectedReports');
+    if (!tbody || tbody.dataset.batchBound) return;
+    tbody.dataset.batchBound = '1';
+
+    tbody.addEventListener('change', (event) => {
+      const checkbox = event.target.closest('input[data-select-report]');
+      if (!checkbox) return;
+      const id = Number(checkbox.dataset.selectReport);
+      if (checkbox.checked) laporanTerpilihUntukEkspor.add(id);
+      else laporanTerpilihUntukEkspor.delete(id);
+      perbaruiKontrolEkspor();
+    });
+
+    if (selectAll) selectAll.addEventListener('change', () => {
+      tbody.querySelectorAll('input[data-select-report]').forEach((checkbox) => {
+        if (checkbox.closest('tr').style.display === 'none') return;
+        checkbox.checked = selectAll.checked;
+        const id = Number(checkbox.dataset.selectReport);
+        if (checkbox.checked) laporanTerpilihUntukEkspor.add(id);
+        else laporanTerpilihUntukEkspor.delete(id);
+      });
+      perbaruiKontrolEkspor();
+    });
+    if (tombolEkspor) tombolEkspor.addEventListener('click', eksporLaporanTerpilih);
+  }
+
   function renderDashboard() {
     const tbody = $('verifikatorTableBody');
     if (!tbody) return;
+    ikatKontrolEkspor();
+    const scrollContainer = $('verifikatorListScroll');
+    const posisiScroll = scrollContainer ? scrollContainer.scrollTop : 0;
+    const laporanSiap = new Set(laporan.filter((l) => l.status === 'Menunggu Verifikasi').map((l) => l.id_pengaduan));
+    laporanTerpilihUntukEkspor.forEach((id) => {
+      if (!laporanSiap.has(id)) laporanTerpilihUntukEkspor.delete(id);
+    });
     renderMetrik();
     isiFilter('dashboard');
 
     tbody.innerHTML = '';
     if (!laporan.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:24px;">Belum ada laporan masuk.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Belum ada laporan masuk.</td></tr>';
     }
 
     laporan.forEach((l) => {
       const tr = document.createElement('tr');
       tr.dataset.id = l.id_pengaduan;
+      const checkbox = l.status === 'Menunggu Verifikasi'
+        ? '<input type="checkbox" data-select-report="' + l.id_pengaduan + '" aria-label="Pilih laporan #' + l.id_pengaduan + '"' +
+          (laporanTerpilihUntukEkspor.has(l.id_pengaduan) ? ' checked' : '') + '>'
+        : '';
       const foto = l.foto_list.length
         ? '<button type="button" class="thumb-btn" data-foto="' + esc(A.fileUrl(l.foto_list[0])) + '"><img src="' + esc(A.fileUrl(l.foto_list[0])) + '" alt="Bukti" class="thumb-img"></button>' +
           (l.foto_list.length > 1 ? '<span class="cell-meta" style="display:block;">+' + (l.foto_list.length - 1) + ' foto</span>' : '')
@@ -129,6 +219,7 @@
         : '<span class="status-pill ' + A.pillClass(l.status_ui) + '">' + esc(l.status_ui) + '</span>';
 
       tr.innerHTML =
+        '<td class="text-center">' + checkbox + '</td>' +
         '<td><div class="cell-reporter"><div class="cell-avatar">' + esc(A.inisial(l.nama_pelapor)) + '</div><div>' +
         '<span class="cell-name" style="display:block;">' + esc(l.nama_pelapor) + '</span>' +
         '<span class="cell-meta" style="display:block;margin-top:3px;">' + (l.role_pelapor === 'dosen' ? 'NIP' : 'NIM') + ': ' + esc(l.identitas_pelapor || '-') + '</span></div></div></td>' +
@@ -161,11 +252,17 @@
         if (ok) tampil++;
       });
       if (hasil) hasil.textContent = 'Menampilkan ' + tampil + ' dari ' + laporan.length + ' laporan.';
+      perbaruiKontrolEkspor();
     };
     if (cariInput && !cariInput.dataset.bound) { cariInput.dataset.bound = '1'; cariInput.addEventListener('input', terapkan); }
     if (!tbody.dataset.filterBound) { tbody.dataset.filterBound = '1'; ikatFilter('dashboard', terapkan); }
     window.__terapkanFilterDashboard = terapkan;
     terapkan();
+    if (scrollContainer) {
+      window.requestAnimationFrame(() => {
+        scrollContainer.scrollTop = Math.min(posisiScroll, Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight));
+      });
+    }
   }
 
   window.openApproveModal = function (id, judul) {
