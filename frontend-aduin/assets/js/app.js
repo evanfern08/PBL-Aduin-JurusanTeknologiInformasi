@@ -188,7 +188,7 @@
       ['Daftar Laporan', 'verifikator/riwayat.html', 'fa-solid fa-clipboard-list'],
       ['Statistik', 'verifikator/statistik.html', 'fa-solid fa-chart-simple'],
       ['Kelola Teknisi', 'verifikator/kelola_teknisi.html', 'fa-solid fa-users'],
-      ['Kelola Sarpras', 'verifikator/kelola_sapras.html', 'fa-solid fa-boxes-stacked'],
+      ['Kelola Sarpras', 'verifikator/kelola_sarpras.html', 'fa-solid fa-boxes-stacked'],
       ['Kelola Fasilitas', 'verifikator/kelola_fasilitas.html', 'fa-solid fa-building'],
       ['Pengaturan', 'pengaturan.html', 'fa-solid fa-gear'],
     ],
