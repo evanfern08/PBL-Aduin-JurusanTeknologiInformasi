@@ -235,16 +235,18 @@
       '<form id="formTeknisiUpdate" class="modal-body">' +
       '<p id="infoRevisi" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;padding:8px 10px;border-radius:8px;margin-bottom:12px;"></p>' +
       '<div style="margin-bottom:14px;"><label class="form-label">Status Pengerjaan</label>' +
-      '<select id="selectStatusTugas" style="' + inp + 'cursor:pointer;">' +
+      '<select id="selectStatusTugas" required style="' + inp + 'cursor:pointer;">' +
       '<option value="Tugas Baru">Tugas Baru (Belum Mulai)</option>' +
       '<option value="Sedang Dikerjakan">Sedang Dikerjakan (Dalam Proses)</option>' +
       '<option value="Selesai">Selesai (Perbaikan Tuntas)</option></select></div>' +
-      '<div style="margin-bottom:14px;"><label class="form-label">Catatan Hasil Perbaikan</label>' +
-      '<textarea id="textareaCatatanPerbaikan" rows="3" placeholder="Contoh: Kabel power dan sekring diganti..." style="' + inp + 'resize:vertical;"></textarea></div>' +
+      '<div style="margin-bottom:14px;"><label class="form-label" for="textareaCatatanPerbaikan">Catatan Hasil Perbaikan</label>' +
+      '<textarea id="textareaCatatanPerbaikan" rows="3" required placeholder="Contoh: Kabel power dan sekring diganti..." style="' + inp + 'resize:vertical;"></textarea></div>' +
+      '<p style="font-size:12px;color:#64748b;margin:0 0 8px;">Unggah foto kondisi sebelum dan hasil pengerjaan. Foto hasil wajib saat tugas ditandai selesai.</p>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">' +
       ['Sebelum', 'Sesudah'].map((n) =>
         '<div style="border:1px dashed #cbd5e1;border-radius:8px;padding:10px;text-align:center;background:#f8fafc;">' +
-        '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">Foto ' + n + '</label>' +
+        '<label for="fileFoto' + n + '" style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">' +
+        (n === 'Sesudah' ? 'Foto hasil pengerjaan' : 'Foto kondisi sebelum') + '</label>' +
         '<input type="file" id="fileFoto' + n + '" accept="image/png,image/jpeg" style="font-size:11px;width:100%;color:#64748b;">' +
         '<div id="previewFoto' + n + 'Wrap" style="margin-top:6px;display:none;"><img id="imgPreviewFoto' + n + '" alt="" style="max-height:55px;border-radius:4px;margin:0 auto;display:block;border:1px solid #e2e8f0;"></div>' +
         '<p id="fotoLama' + n + '" style="font-size:11px;color:#64748b;margin-top:4px;"></p></div>').join('') +
@@ -258,23 +260,39 @@
     document.getElementById('btnTutupModalTeknisi').addEventListener('click', tutup);
     document.getElementById('btnBatalTeknisiModal').addEventListener('click', tutup);
 
+    const form = document.getElementById('formTeknisiUpdate');
+    const statusField = document.getElementById('selectStatusTugas');
+    const catatanField = document.getElementById('textareaCatatanPerbaikan');
+    const fotoHasilField = document.getElementById('fileFotoSesudah');
+    const perbaruiValidasiFotoHasil = () => {
+      const currentTask = cariTugas(tugasAktifId);
+      fotoHasilField.required = statusField.value === 'Selesai' && !(currentTask && currentTask.foto_hasil);
+    };
+    statusField.required = true;
+    statusField.addEventListener('change', perbaruiValidasiFotoHasil);
+    catatanField.addEventListener('input', () => catatanField.setCustomValidity(''));
+
     ['Sebelum', 'Sesudah'].forEach((n) => {
       document.getElementById('fileFoto' + n).addEventListener('change', (e) => {
         const f = e.target.files[0];
         const wrap = document.getElementById('previewFoto' + n + 'Wrap');
+        e.target.setCustomValidity(f && !['image/jpeg', 'image/png'].includes(f.type)
+          ? 'Pilih file gambar JPG atau PNG.' : '');
         if (!f) { wrap.style.display = 'none'; return; }
         document.getElementById('imgPreviewFoto' + n).src = URL.createObjectURL(f);
         wrap.style.display = 'block';
       });
     });
 
-    document.getElementById('formTeknisiUpdate').addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!tugasAktifId) return;
 
       const status = document.getElementById('selectStatusTugas').value;
       const catatan = document.getElementById('textareaCatatanPerbaikan').value.trim();
-      if (status === 'Selesai' && !catatan) { A.showToast('Isi catatan hasil perbaikan sebelum menandai selesai.', 'error'); return; }
+      catatanField.setCustomValidity(catatan ? '' : 'Catatan hasil perbaikan wajib diisi.');
+      perbaruiValidasiFotoHasil();
+      if (!form.reportValidity()) return;
 
       const fd = new FormData();
       fd.append('id_pengaduan', tugasAktifId);
@@ -326,10 +344,13 @@
 
     ['Sebelum', 'Sesudah'].forEach((n) => {
       document.getElementById('fileFoto' + n).value = '';
+      document.getElementById('fileFoto' + n).setCustomValidity('');
       document.getElementById('previewFoto' + n + 'Wrap').style.display = 'none';
       const lama = n === 'Sebelum' ? t.foto_sebelum : t.foto_hasil;
       document.getElementById('fotoLama' + n).textContent = lama ? 'Sudah ada foto (unggah baru untuk mengganti)' : '';
     });
+    document.getElementById('textareaCatatanPerbaikan').setCustomValidity('');
+    document.getElementById('selectStatusTugas').dispatchEvent(new Event('change'));
 
     document.getElementById('modalTeknisiUpdate').classList.remove('hidden');
   }

@@ -645,6 +645,15 @@ select.glass-input { cursor: pointer; }
   padding: 20px 22px;
 }
 
+.metric-card-compact {
+  gap: 3px;
+  padding: 12px 16px;
+}
+
+.metric-card-compact .metric-value {
+  font-size: 24px;
+}
+
 .metric-label {
   font-size: 11px;
   font-weight: 700;
@@ -699,6 +708,26 @@ select.glass-input { cursor: pointer; }
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
+}
+
+.verifikator-list-scroll {
+  max-height: 65vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.verifikator-list-scroll .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.batch-select-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 10px;
 }
 
 .data-table {

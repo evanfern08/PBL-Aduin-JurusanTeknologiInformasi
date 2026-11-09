@@ -92,7 +92,7 @@
       <main class="content-body">
         <!-- 4 KARTU METRIK -->
         <section class="metric-grid">
-          <div class="glass-card metric-card">
+          <div class="glass-card metric-card metric-card-compact">
             <span class="metric-label">Perlu Verifikasi</span>
             <strong class="metric-value" id="metricMenunggu">2</strong>
             <span class="metric-note">Tiket menunggu disposisi</span>
@@ -159,10 +159,20 @@
           </div>
           <p class="filter-result" id="dashboardFilterResult" aria-live="polite"></p>
 
-          <div class="table-wrapper">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;">
+            <span id="selectedReportCount" class="text-muted" aria-live="polite">0 laporan dipilih</span>
+            <button type="button" class="btn btn-success" id="exportSelectedReports" disabled>Ekspor CSV Terpilih</button>
+          </div>
+          <div class="table-wrapper verifikator-list-scroll" id="verifikatorListScroll">
             <table class="data-table">
               <thead>
                 <tr>
+                  <th class="text-center">
+                    <label class="batch-select-control">
+                      <input type="checkbox" id="selectAllReadyReports" aria-label="Select All laporan yang siap diteruskan ke pusat">
+                      <span>Select All</span>
+                    </label>
+                  </th>
                   <th>Pelapor</th>
                   <th>Lokasi</th>
                   <th>Kategori</th>
