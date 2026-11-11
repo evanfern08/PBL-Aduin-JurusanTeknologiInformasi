@@ -202,7 +202,7 @@
     if (!fotoBox) { fotoBox = document.createElement('div'); fotoBox.id = 'detailFotoTeknisi'; fotoBox.style.marginTop = '12px'; body.appendChild(fotoBox); }
     const foto = (judul, path) => path
       ? '<div><strong>' + judul + '</strong><br><a href="' + esc(A.fileUrl(path)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(path)) +
-        '" alt="' + judul + '" style="max-width:100%;max-height:160px;border-radius:8px;margin-top:6px;border:1px solid #e2e8f0;"></a></div>' : '';
+      '" alt="' + judul + '" style="max-width:100%;max-height:160px;border-radius:8px;margin-top:6px;border:1px solid #e2e8f0;"></a></div>' : '';
     fotoBox.innerHTML = foto('Foto sebelum', t.foto_sebelum) + foto('Foto sesudah', t.foto_hasil);
 
     modal.classList.remove('hidden');
@@ -223,37 +223,79 @@
   /* ------------------------------------------------------------------
      Modal update tugas (dibuat dinamis)
      ------------------------------------------------------------------ */
+  /* ================================================================
+     teknisi.js — potongan yang DIUBAH (fungsi pastikanModalUpdate)
+     ================================================================ */
   function pastikanModalUpdate() {
     if (document.getElementById('modalTeknisiUpdate')) return;
 
     const inp = 'width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;color:#1e293b;background:#f8fafc;outline:none;';
-    document.body.insertAdjacentHTML('beforeend',
-      '<div id="modalTeknisiUpdate" class="modal-overlay hidden"><div class="modal-box" style="max-width:500px;max-height:92vh;overflow:auto;">' +
-      '<div class="modal-header"><div><span id="modalTaskCode" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0284c7;padding:3px 8px;border-radius:6px;">#</span>' +
-      '<h3 id="modalTaskTitle" class="modal-title" style="margin-top:6px;">Update Pengerjaan Tugas</h3></div>' +
-      '<button type="button" class="modal-close" id="btnTutupModalTeknisi">&times;</button></div>' +
-      '<form id="formTeknisiUpdate" class="modal-body">' +
-      '<p id="infoRevisi" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;padding:8px 10px;border-radius:8px;margin-bottom:12px;"></p>' +
-      '<div style="margin-bottom:14px;"><label class="form-label">Status Pengerjaan</label>' +
-      '<select id="selectStatusTugas" required style="' + inp + 'cursor:pointer;">' +
-      '<option value="Tugas Baru">Tugas Baru (Belum Mulai)</option>' +
-      '<option value="Sedang Dikerjakan">Sedang Dikerjakan (Dalam Proses)</option>' +
-      '<option value="Selesai">Selesai (Perbaikan Tuntas)</option></select></div>' +
-      '<div style="margin-bottom:14px;"><label class="form-label" for="textareaCatatanPerbaikan">Catatan Hasil Perbaikan</label>' +
-      '<textarea id="textareaCatatanPerbaikan" rows="3" required placeholder="Contoh: Kabel power dan sekring diganti..." style="' + inp + 'resize:vertical;"></textarea></div>' +
-      '<p style="font-size:12px;color:#64748b;margin:0 0 8px;">Unggah foto kondisi sebelum dan hasil pengerjaan. Foto hasil wajib saat tugas ditandai selesai.</p>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">' +
-      ['Sebelum', 'Sesudah'].map((n) =>
-        '<div style="border:1px dashed #cbd5e1;border-radius:8px;padding:10px;text-align:center;background:#f8fafc;">' +
-        '<label for="fileFoto' + n + '" style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">' +
-        (n === 'Sesudah' ? 'Foto hasil pengerjaan' : 'Foto kondisi sebelum') + '</label>' +
-        '<input type="file" id="fileFoto' + n + '" accept="image/png,image/jpeg" style="font-size:11px;width:100%;color:#64748b;">' +
-        '<div id="previewFoto' + n + 'Wrap" style="margin-top:6px;display:none;"><img id="imgPreviewFoto' + n + '" alt="" style="max-height:55px;border-radius:4px;margin:0 auto;display:block;border:1px solid #e2e8f0;"></div>' +
-        '<p id="fotoLama' + n + '" style="font-size:11px;color:#64748b;margin-top:4px;"></p></div>').join('') +
-      '</div>' +
-      '<div class="modal-footer"><button type="button" class="btn btn-ghost" id="btnBatalTeknisiModal">Batal</button>' +
-      '<button type="submit" class="btn btn-success" id="btnSimpanTeknisiTask">Simpan Perubahan</button></div>' +
-      '</form></div></div>');
+
+    document.body.insertAdjacentHTML('beforeend', `
+  <div id="modalTeknisiUpdate" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:560px;max-height:92vh;overflow:auto;">
+      <div class="modal-header">
+        <div>
+          <span id="modalTaskCode" style="font-size:11px;font-weight:700;background:#e0f2fe;color:#0284c7;padding:3px 8px;border-radius:6px;">#</span>
+          <h3 id="modalTaskTitle" class="modal-title" style="margin-top:6px;">Update Pengerjaan Tugas</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnTutupModalTeknisi">&times;</button>
+      </div>
+
+      <form id="formTeknisiUpdate" class="modal-body" novalidate>
+        <p id="infoRevisi" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;padding:8px 10px;border-radius:8px;margin-bottom:12px;"></p>
+
+        <!-- ============ STATUS ============ -->
+        <div style="margin-bottom:14px;">
+          <label class="form-label" for="selectStatusTugas">Status Pengerjaan</label>
+          <select id="selectStatusTugas" required style="${inp}cursor:pointer;">
+            <option value="Tugas Baru">Tugas Baru (Belum Mulai)</option>
+            <option value="Sedang Dikerjakan">Sedang Dikerjakan (Dalam Proses)</option>
+            <option value="Selesai">Selesai (Perbaikan Tuntas)</option>
+          </select>
+        </div>
+
+        <!-- ============ FOTO SEBELUM (READONLY DARI PELAPOR) ============ -->
+        <div style="margin-bottom:14px;">
+          <label class="form-label">Foto Sebelum (dari Pelapor)</label>
+          <div id="fotoSebelumBox"
+               style="border:1px solid #e2e8f0;border-radius:8px;padding:10px;background:#f8fafc;min-height:70px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <!-- diisi JS -->
+          </div>
+        </div>
+
+        <!-- ============ CATATAN ============ -->
+        <div style="margin-bottom:14px;">
+          <label class="form-label" for="textareaCatatanPerbaikan">Catatan Hasil Perbaikan</label>
+          <textarea id="textareaCatatanPerbaikan" rows="3" required
+                    placeholder="Contoh: Kabel power dan sekring diganti..."
+                    style="${inp}resize:vertical;"></textarea>
+        </div>
+
+        <!-- ============ FOTO SESUDAH (WAJIB SAAT SELESAI) ============ -->
+        <div style="margin-bottom:18px;">
+          <label class="form-label" for="fileFotoSesudah">
+            Foto Hasil Pengerjaan <span id="labelWajibFoto" style="color:#dc2626;font-size:11px;">(wajib saat status Selesai)</span>
+          </label>
+          <div style="border:1px dashed #cbd5e1;border-radius:8px;padding:10px;background:#f8fafc;">
+            <input type="file" id="fileFotoSesudah" accept="image/jpeg,image/png"
+                   style="font-size:12px;width:100%;color:#64748b;">
+            <div id="previewFotoSesudahWrap" style="margin-top:8px;display:none;">
+              <img id="imgPreviewFotoSesudah" alt="Preview hasil"
+                   style="max-height:90px;border-radius:6px;border:1px solid #e2e8f0;">
+            </div>
+            <p id="fotoLamaSesudah" style="font-size:11px;color:#64748b;margin-top:6px;"></p>
+            <p id="errFotoSesudah" style="font-size:11px;color:#dc2626;margin-top:4px;display:none;"></p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="btnBatalTeknisiModal">Batal</button>
+          <button type="submit" class="btn btn-success" id="btnSimpanTeknisiTask">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>`);
 
     const modal = document.getElementById('modalTeknisiUpdate');
     const tutup = () => { modal.classList.add('hidden'); tugasAktifId = null; };
@@ -264,34 +306,103 @@
     const statusField = document.getElementById('selectStatusTugas');
     const catatanField = document.getElementById('textareaCatatanPerbaikan');
     const fotoHasilField = document.getElementById('fileFotoSesudah');
-    const perbaruiValidasiFotoHasil = () => {
-      const currentTask = cariTugas(tugasAktifId);
-      fotoHasilField.required = statusField.value === 'Selesai' && !(currentTask && currentTask.foto_hasil);
-    };
+    const errFoto = document.getElementById('errFotoSesudah');
+    const labelWajib = document.getElementById('labelWajibFoto');
+
+    /* ------------------------------------------------------------
+       Render Foto Sebelum — dari pengaduan.foto_bukti (dari pelapor)
+       ------------------------------------------------------------ */
+    function renderFotoSebelum(pathList) {
+      const box = document.getElementById('fotoSebelumBox');
+      const arr = Array.isArray(pathList) ? pathList : (pathList ? [pathList] : []);
+      if (!arr.length) {
+        box.innerHTML = '<span style="font-size:12px;color:#94a3b8;font-style:italic;">Tidak ada foto dari pelapor</span>';
+        return;
+      }
+      box.innerHTML = arr.map((p) => `
+      <a href="${esc(A.fileUrl(p))}" target="_blank" rel="noopener">
+        <img src="${esc(A.fileUrl(p))}" alt="Foto sebelum"
+             style="width:74px;height:74px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;cursor:zoom-in;">
+      </a>`).join('');
+    }
+
+    /* ------------------------------------------------------------
+       Validasi dinamis: foto sesudah wajib saat status = Selesai
+       ------------------------------------------------------------ */
+    function perbaruiValidasiFotoHasil() {
+      const t = cariTugas(tugasAktifId);
+      const sudahAdaFoto = !!(t && t.foto_hasil);
+      const perluUpload = statusField.value === 'Selesai' && !sudahAdaFoto;
+      const fileDipilih = fotoHasilField.files.length > 0;
+
+      // Atribut required untuk native browser validation
+      fotoHasilField.required = perluUpload;
+
+      // Label dinamis
+      labelWajib.style.display = perluUpload ? 'inline' : 'none';
+
+      // Pesan error custom
+      if (perluUpload && !fileDipilih) {
+        errFoto.textContent = 'Foto bukti hasil pengerjaan wajib diunggah!';
+        errFoto.style.display = 'block';
+      } else {
+        errFoto.style.display = 'none';
+      }
+    }
+
     statusField.required = true;
     statusField.addEventListener('change', perbaruiValidasiFotoHasil);
-    catatanField.addEventListener('input', () => catatanField.setCustomValidity(''));
+    fotoHasilField.addEventListener('change', () => {
+      const f = fotoHasilField.files[0];
+      const wrap = document.getElementById('previewFotoSesudahWrap');
 
-    ['Sebelum', 'Sesudah'].forEach((n) => {
-      document.getElementById('fileFoto' + n).addEventListener('change', (e) => {
-        const f = e.target.files[0];
-        const wrap = document.getElementById('previewFoto' + n + 'Wrap');
-        e.target.setCustomValidity(f && !['image/jpeg', 'image/png'].includes(f.type)
-          ? 'Pilih file gambar JPG atau PNG.' : '');
-        if (!f) { wrap.style.display = 'none'; return; }
-        document.getElementById('imgPreviewFoto' + n).src = URL.createObjectURL(f);
+      // Validasi tipe file
+      if (f && !['image/jpeg', 'image/png'].includes(f.type)) {
+        fotoHasilField.value = '';
+        fotoHasilField.setCustomValidity('Pilih file gambar JPG atau PNG.');
+        fotoHasilField.reportValidity();
+        wrap.style.display = 'none';
+        return;
+      }
+      fotoHasilField.setCustomValidity('');
+
+      if (f) {
+        document.getElementById('imgPreviewFotoSesudah').src = URL.createObjectURL(f);
         wrap.style.display = 'block';
-      });
+      } else {
+        wrap.style.display = 'none';
+      }
+      perbaruiValidasiFotoHasil();
     });
 
+    catatanField.addEventListener('input', () => catatanField.setCustomValidity(''));
+
+    /* ------------------------------------------------------------
+       Submit form
+       ------------------------------------------------------------ */
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!tugasAktifId) return;
 
-      const status = document.getElementById('selectStatusTugas').value;
-      const catatan = document.getElementById('textareaCatatanPerbaikan').value.trim();
+      const t = cariTugas(tugasAktifId);
+      const status = statusField.value;
+      const catatan = catatanField.value.trim();
+
       catatanField.setCustomValidity(catatan ? '' : 'Catatan hasil perbaikan wajib diisi.');
       perbaruiValidasiFotoHasil();
+
+      // === VALIDASI FINAL: Foto Sesudah wajib saat Selesai ===
+      if (status === 'Selesai') {
+        const adaFileBaru = fotoHasilField.files.length > 0;
+        const adaFileLama = !!(t && t.foto_hasil);
+        if (!adaFileBaru && !adaFileLama) {
+          errFoto.textContent = 'Foto bukti hasil pengerjaan wajib diunggah!';
+          errFoto.style.display = 'block';
+          fotoHasilField.focus();
+          return; // hentikan submit
+        }
+      }
+
       if (!form.reportValidity()) return;
 
       const fd = new FormData();
@@ -303,12 +414,19 @@
       const btn = document.getElementById('btnSimpanTeknisiTask');
       btn.disabled = true;
       try {
-        for (const [n, field] of [['Sebelum', 'foto_sebelum'], ['Sesudah', 'foto_hasil']]) {
-          const f = document.getElementById('fileFoto' + n).files[0];
-          if (f) { const kecil = await A.kompresGambar(f); fd.append(field, kecil, kecil.name); }
+        // HANYA foto hasil yang di-upload teknisi. Foto sebelum TIDAK di-upload ulang.
+        const f = fotoHasilField.files[0];
+        if (f) {
+          const kecil = await A.kompresGambar(f);
+          fd.append('foto_hasil', kecil, kecil.name);
         }
         await API.post('teknisi/update_tugas.php', fd);
-        A.showToast(status === 'Selesai' ? 'Tugas ditandai selesai. Menunggu review verifikator.' : 'Tugas #' + tugasAktifId + ' diperbarui.', 'success');
+        A.showToast(
+          status === 'Selesai'
+            ? 'Tugas ditandai selesai. Menunggu review verifikator.'
+            : 'Tugas #' + tugasAktifId + ' diperbarui.',
+          'success'
+        );
         tutup();
         await muat();
         renderSemua();
@@ -318,6 +436,42 @@
         btn.disabled = false;
       }
     });
+
+    /* ------------------------------------------------------------
+       Buka modal — isi Foto Sebelum & Foto Lama
+       ------------------------------------------------------------ */
+    window.__isiModalTeknisi = function (t) {
+      document.getElementById('modalTaskCode').textContent = '#' + t.id_pengaduan;
+      document.getElementById('modalTaskTitle').textContent = t.judul_laporan;
+      statusField.value = t.status_tugas;
+      catatanField.value = t.catatan_teknisi || '';
+
+      // Foto sebelum dari pengaduan (bisa array / string)
+      renderFotoSebelum(t.foto_list || t.foto_bukti || []);
+
+      // Info foto hasil yang sudah ada
+      document.getElementById('fotoLamaSesudah').textContent =
+        t.foto_hasil ? 'Sudah ada foto hasil (unggah baru untuk mengganti).' : '';
+
+      // Reset input file
+      fotoHasilField.value = '';
+      fotoHasilField.setCustomValidity('');
+      document.getElementById('previewFotoSesudahWrap').style.display = 'none';
+
+      // Status terkunci bila sudah selesai (review)
+      statusField.disabled = t.status_ui === 'Selesai';
+
+      // Info revisi
+      const info = document.getElementById('infoRevisi');
+      if (t.revisi_ke > 0 && t.catatan_revisi && t.status_tugas !== 'Selesai') {
+        info.style.display = 'block';
+        info.textContent = 'Revisi ke-' + t.revisi_ke + ' dari verifikator: ' + t.catatan_revisi;
+      } else {
+        info.style.display = 'none';
+      }
+
+      perbaruiValidasiFotoHasil();
+    };
   }
 
   function bukaModalUpdate(id) {
@@ -325,6 +479,8 @@
     if (!t) return;
     pastikanModalUpdate();
     tugasAktifId = t.id_pengaduan;
+    window.__isiModalTeknisi(t);
+    document.getElementById('modalTeknisiUpdate').classList.remove('hidden');
 
     document.getElementById('modalTaskCode').textContent = '#' + t.id_pengaduan;
     document.getElementById('modalTaskTitle').textContent = t.judul_laporan;

@@ -91,33 +91,55 @@
     </div>
   </div>
     <!-- MODAL DETAIL PENGADUAN -->
-  <div id="modalDetailPengaduan" class="modal-overlay hidden" onclick="tutupDetail()">
-    <div class="modal-box" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title" id="detailJudul">Judul Laporan</h3>
-          <span class="modal-subtitle" id="detailId">#ID</span>
-        </div>
-        <button type="button" class="modal-close" onclick="tutupDetail()">✕</button>
+<div id="modalDetailPengaduan" class="modal-overlay hidden" onclick="tutupDetail()">
+  <div class="modal-box modal-box-scroll" onclick="event.stopPropagation()">
+
+    <!-- HEADER (sticky, shrink-0) -->
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="detailJudul">Judul Laporan</h3>
+        <span class="modal-subtitle" id="detailId">#ID</span>
       </div>
-      
-      <div class="modal-body" style="font-size: 13px;">
-        <p><strong>Lokasi:</strong> <span id="detailLokasi">-</span></p>
-        <p><strong>Pelapor:</strong> <span id="detailPelapor">-</span></p>
-        <p><strong>Status:</strong> <span id="detailStatus">-</span></p>
-        <p><strong>Tanggal:</strong> <span id="detailTanggal">-</span></p>
-        <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 8px;">
-          <strong>Catatan Teknisi:</strong><br>
-          <span id="detailDeskripsi">-</span>
-        </div>
+      <button type="button" class="modal-close" onclick="tutupDetail()" aria-label="Tutup">✕</button>
+    </div>
+
+    <!-- BODY (scroll independen) -->
+    <div class="modal-body" style="font-size: 13px;">
+      <div>
+        <p style="margin: 0 0 6px;"><strong>Lokasi:</strong> <span id="detailLokasi">-</span></p>
+        <p style="margin: 0 0 6px;"><strong>Pelapor:</strong> <span id="detailPelapor">-</span></p>
+        <p style="margin: 0 0 6px;"><strong>Status:</strong> <span id="detailStatus">-</span></p>
+        <p style="margin: 0;"><strong>Tanggal:</strong> <span id="detailTanggal">-</span></p>
       </div>
 
-      <div class="modal-footer" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-        <!-- Tombol Edit ditambahkan di sini -->
-        <button type="button" class="btn btn-success" onclick="editLaporanSelesai()" style="width: 100%;">Edit Catatan & Bukti</button>
+      <!-- FOTO SEBELUM (dari pelapor) -->
+      <div>
+        <span class="detail-section-label">Foto Sebelum (dari Pelapor)</span>
+        <div id="detailFotoSebelum" class="detail-photo-grid"></div>
+      </div>
+
+      <!-- FOTO SESUDAH (hasil teknisi) -->
+      <div>
+        <span class="detail-section-label">Foto Hasil Pengerjaan (Teknisi)</span>
+        <div id="detailFotoSesudah" class="detail-photo-grid"></div>
+      </div>
+
+      <!-- CATATAN TEKNISI -->
+      <div style="padding: 12px; background: #f8fafc; border-radius: 8px;">
+        <span class="detail-section-label" style="margin-bottom: 4px;">Catatan Teknisi</span>
+        <span id="detailDeskripsi" style="white-space: pre-wrap; word-break: break-word;">-</span>
       </div>
     </div>
+
+    <!-- FOOTER (sticky, shrink-0) -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-success" onclick="editLaporanSelesai()" style="width: 100%;">
+        Edit Catatan &amp; Bukti
+      </button>
+    </div>
+
   </div>
+</div>
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/api.js"></script>
   <script src="../assets/js/app.js"></script>
