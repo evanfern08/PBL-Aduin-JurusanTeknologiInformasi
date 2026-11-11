@@ -209,9 +209,20 @@
         ? '<input type="checkbox" data-select-report="' + l.id_pengaduan + '" aria-label="Pilih laporan #' + l.id_pengaduan + '"' +
           (laporanTerpilihUntukEkspor.has(l.id_pengaduan) ? ' checked' : '') + '>'
         : '';
-      const foto = l.foto_list.length
-        ? '<button type="button" class="thumb-btn" data-foto="' + esc(A.fileUrl(l.foto_list[0])) + '"><img src="' + esc(A.fileUrl(l.foto_list[0])) + '" alt="Bukti" class="thumb-img"></button>' +
-          (l.foto_list.length > 1 ? '<span class="cell-meta" style="display:block;">+' + (l.foto_list.length - 1) + ' foto</span>' : '')
+            const foto = l.foto_list.length
+        ? (function () {
+            const MAKS = 4;
+            const thumbs = l.foto_list.slice(0, MAKS).map(function (f, i) {
+              return '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Foto ' + (i + 1) +
+                '" data-foto-index="' + i + '" data-foto-json=\'' + esc(JSON.stringify(l.foto_list)) + '\'>';
+            }).join('');
+            const sisa = l.foto_list.length - MAKS;
+            const more = sisa > 0
+              ? '<div class="gallery-thumb-more" data-foto-index="' + MAKS +
+                '" data-foto-json=\'' + esc(JSON.stringify(l.foto_list)) + '\'>+' + sisa + '</div>'
+              : '';
+            return '<div class="gallery-thumb-grid" style="max-width:200px;">' + thumbs + more + '</div>';
+          })()
         : '<span class="text-muted">Tanpa foto</span>';
       const aksi = l.status === 'Menunggu Verifikasi'
         ? '<div class="action-group"><button type="button" class="btn-icon btn-icon-success" data-aksi="approve" title="Setujui">✓</button>' +
@@ -230,8 +241,14 @@
         '<span class="cell-meta" style="display:block;">' + A.tanggalJam(l.tanggal_lapor) + '</span></td>' +
         '<td class="text-center">' + foto + '</td><td class="text-right">' + aksi + '</td>';
 
-      const fotoBtn = tr.querySelector('[data-foto]');
-      if (fotoBtn) fotoBtn.addEventListener('click', () => window.openImageModal(fotoBtn.dataset.foto));
+        tr.querySelectorAll('[data-foto-index]').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const fotos = JSON.parse(el.dataset.fotoJson || '[]');
+          const idx = parseInt(el.dataset.fotoIndex, 10) || 0;
+          window.bukaLightbox(fotos, idx);
+        });
+      });
       const ap = tr.querySelector('[data-aksi="approve"]');
       if (ap) ap.addEventListener('click', () => window.openApproveModal(l.id_pengaduan, l.judul_laporan));
       const rj = tr.querySelector('[data-aksi="reject"]');
@@ -495,24 +512,66 @@
     setText('detailDeskripsi', d.deskripsi || '-');
 
     const fotoBox = $('detailFotoContainer');
-    if (fotoBox) {
+    const fotoGrid = $('detailFotoGrid');
+    if (fotoBox && fotoGrid) {
       if (d.foto_list.length) {
         fotoBox.style.display = 'block';
-        fotoBox.innerHTML = '<strong>Foto Bukti Kerusakan:</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
-          d.foto_list.map((f) => '<a href="' + esc(A.fileUrl(f)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(f)) +
-            '" alt="Foto kerusakan" style="height:110px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover;"></a>').join('') + '</div>';
-      } else { fotoBox.style.display = 'none'; fotoBox.innerHTML = ''; }
+        fotoGrid.innerHTML = d.foto_list.map(function (f, i) {
+          return '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="Foto kerusakan ' + (i + 1) +
+            '" data-detail-foto-index="' + i + '">';
+        }).join('');
+        fotoGrid.querySelectorAll('[data-detail-foto-index]').forEach(function (el) {
+          el.addEventListener('click', function () {
+            const idx = parseInt(el.dataset.detailFotoIndex, 10) || 0;
+            window.bukaLightbox(d.foto_list, idx);
+          });
+        });
+      } else {
+        fotoBox.style.display = 'none';
+        fotoGrid.innerHTML = '';
+      }
     }
 
-    const hasil = $('detailHasil');
+        const hasil = $('detailHasil');
     if (hasil) {
-      if (d.catatan_teknisi || d.foto_hasil || d.foto_sebelum) {
+      const adaSebelum = Array.isArray(d.foto_sebelum) ? d.foto_sebelum.length : !!d.foto_sebelum;
+      const adaHasil = Array.isArray(d.foto_hasil) ? d.foto_hasil.length : !!d.foto_hasil;
+
+      if (d.catatan_teknisi || adaHasil || adaSebelum) {
         hasil.style.display = 'block';
-        const foto = (judul, p) => p ? '<div style="margin-top:8px;"><em>' + judul + '</em><br><a href="' + esc(A.fileUrl(p)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(p)) +
-          '" alt="' + judul + '" style="max-width:100%;max-height:150px;border-radius:8px;"></a></div>' : '';
+
+        // Normalisasi ke array (backend lama kirim string, baru kirim array)
+        const keArray = (v) => !v ? [] : Array.isArray(v) ? v : [v];
+
+        // Render grid + binding lightbox
+        const renderGrid = (judul, fotos) => {
+          if (!fotos.length) return '';
+          const html = fotos.map(function (f, i) {
+            return '<img src="' + esc(A.fileUrl(f)) + '" class="thumb-preview" alt="' + judul + ' ' + (i + 1) +
+              '" data-hasil-foto="' + i + '" data-hasil-json=\'' + esc(JSON.stringify(fotos)) + '\'>';
+          }).join('');
+          return '<div style="margin-top:10px;"><em>' + judul + ' (' + fotos.length + '):</em>' +
+            '<div class="gallery-thumb-grid" style="max-width:100%;">' + html + '</div></div>';
+        };
+
+        const sebelumArr = keArray(d.foto_sebelum);
+        const hasilArr = keArray(d.foto_hasil);
+
         hasil.innerHTML = '<strong>Hasil kerja teknisi' + (d.nama_teknisi ? ' (' + esc(d.nama_teknisi) + ')' : '') + ':</strong><br>' +
-          esc(d.catatan_teknisi || '-') + foto('Foto sebelum', d.foto_sebelum) + foto('Foto sesudah', d.foto_hasil);
-      } else { hasil.style.display = 'none'; }
+          esc(d.catatan_teknisi || '-') +
+          renderGrid('Foto sebelum', sebelumArr) +
+          renderGrid('Foto sesudah', hasilArr);
+
+        hasil.querySelectorAll('[data-hasil-foto]').forEach(function (el) {
+          el.addEventListener('click', function () {
+            const fotos = JSON.parse(el.dataset.hasilJson || '[]');
+            const idx = parseInt(el.dataset.hasilFoto, 10) || 0;
+            window.bukaLightbox(fotos, idx);
+          });
+        });
+      } else {
+        hasil.style.display = 'none';
+      }
     }
 
     const log = $('detailChangeLog');
@@ -548,7 +607,91 @@
     if (modal) modal.classList.add('hidden');
     if (modal) modal.classList.remove('flex', 'active');
   };
+    /* ==========================================================================
+     LIGHTBOX GALERI (untuk foto bukti & hasil teknisi)
+     ========================================================================== */
+  let lightboxState = { fotos: [], index: 0, el: null };
 
+  function bukaLightbox(fotos, startIndex) {
+    if (!fotos || !fotos.length) return;
+
+    let box = $('foto-lightbox');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'foto-lightbox';
+      box.className = 'gallery-lightbox hidden';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', 'Galeri foto');
+      document.body.append(box);
+    }
+
+    lightboxState.fotos = fotos;
+    lightboxState.index = Math.max(0, Math.min(startIndex || 0, fotos.length - 1));
+    lightboxState.el = box;
+
+    renderLightbox();
+    box.classList.remove('hidden');
+    document.addEventListener('keydown', lightboxKeyHandler);
+  }
+
+  function renderLightbox() {
+    const box = lightboxState.el;
+    if (!box) return;
+    const fotos = lightboxState.fotos;
+    const i = lightboxState.index;
+    const total = fotos.length;
+
+    const dots = fotos.map(function (_, idx) {
+      return '<button type="button" class="gallery-dot' + (idx === i ? ' active' : '') +
+        '" data-dot-index="' + idx + '" aria-label="Foto ' + (idx + 1) + '"></button>';
+    }).join('');
+
+    box.innerHTML =
+      '<button type="button" class="gallery-lightbox-close" id="lightbox-close" aria-label="Tutup galeri">&times;</button>' +
+      '<div class="gallery-lightbox-stage">' +
+        (total > 1 ? '<button type="button" class="gallery-nav-btn gallery-nav-prev" id="lightbox-prev" aria-label="Sebelumnya">&#8249;</button>' : '') +
+        '<img class="gallery-lightbox-img" id="lightbox-img" src="' + esc(A.fileUrl(fotos[i])) + '" alt="Foto ' + (i + 1) + ' dari ' + total + '">' +
+        (total > 1 ? '<button type="button" class="gallery-nav-btn gallery-nav-next" id="lightbox-next" aria-label="Berikutnya">&#8250;</button>' : '') +
+      '</div>' +
+      '<p class="gallery-lightbox-caption">Foto ' + (i + 1) + ' dari ' + total + '</p>' +
+      (total > 1 ? '<div class="gallery-lightbox-dots">' + dots + '</div>' : '');
+
+    box.querySelector('#lightbox-close').onclick = tutupLightbox;
+    const prev = box.querySelector('#lightbox-prev');
+    const next = box.querySelector('#lightbox-next');
+    if (prev) prev.onclick = function () { lightboxNav(-1); };
+    if (next) next.onclick = function () { lightboxNav(1); };
+    box.querySelectorAll('[data-dot-index]').forEach(function (dot) {
+      dot.onclick = function () {
+        lightboxState.index = parseInt(dot.dataset.dotIndex, 10) || 0;
+        renderLightbox();
+      };
+    });
+    box.onclick = function (e) { if (e.target === box) tutupLightbox(); };
+  }
+
+  function lightboxNav(delta) {
+    const total = lightboxState.fotos.length;
+    if (!total) return;
+    lightboxState.index = (lightboxState.index + delta + total) % total;
+    renderLightbox();
+  }
+
+  function tutupLightbox() {
+    const box = $('foto-lightbox');
+    if (box) box.classList.add('hidden');
+    document.removeEventListener('keydown', lightboxKeyHandler);
+  }
+
+  function lightboxKeyHandler(e) {
+    if (e.key === 'Escape') tutupLightbox();
+    else if (e.key === 'ArrowLeft') lightboxNav(-1);
+    else if (e.key === 'ArrowRight') lightboxNav(1);
+  }
+
+  window.bukaLightbox = bukaLightbox;
+  window.tutupLightbox = tutupLightbox;
   /* ---- Pengingat: laporan di UPA PP Pusat mengendap > 3 hari ---- */
   function renderReminder() {
     const btn = $('btn-reminder');
