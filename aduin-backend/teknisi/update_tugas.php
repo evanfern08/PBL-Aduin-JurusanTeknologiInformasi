@@ -55,24 +55,31 @@ try {
         json_response(null, 'Laporan ini tidak sedang dalam tahap perbaikan.', 409);
     }
 
-    // Foto (opsional)
-    $fotoSebelum = isset($_FILES['foto_sebelum']) ? upload_foto($_FILES['foto_sebelum'], 'hasil') : null;
-    if ($fotoSebelum) $fileBaru[] = $fotoSebelum;
-    $fotoHasil   = isset($_FILES['foto_hasil'])   ? upload_foto($_FILES['foto_hasil'], 'hasil')   : null;
-    if ($fotoHasil) $fileBaru[] = $fotoHasil;
+    // Validasi server-side: foto hasil wajib saat status Selesai
+    $fotoHasilExisting = isset($tugas['foto_hasil']) ? trim((string)$tugas['foto_hasil']) : '';
+    $adaUploadFotoHasil = isset($_FILES['foto_hasil']) && !empty($_FILES['foto_hasil']['name']);
+    if ($statusTugas === 'Selesai' && !$adaUploadFotoHasil && $fotoHasilExisting === '') {
+        json_response(null, 'Foto hasil pengerjaan wajib diisi', 400);
+    }
+
+    // Foto hasil (opsional di status lain, wajib terpenuhi di Selesai). Foto sebelum berasal dari pengaduan (pelapor), bukan upload teknisi.
+    $fotoHasil = null;
+    if ($adaUploadFotoHasil) {
+        $fotoHasil = upload_foto($_FILES['foto_hasil'], 'hasil');
+        if ($fotoHasil) $fileBaru[] = $fotoHasil;
+    }
 
     $pdo->beginTransaction();
 
     $mulaiBaru = $tugas['waktu_mulai'] === null;
 
     if ($sudahDiterima) {
-        // Hasil sudah diterima verifikator: hanya catatan & bukti foto yang boleh dilengkapi.
+        // Hasil sudah diterima verifikator: hanya catatan & bukti foto hasil yang boleh dilengkapi.
         $pdo->prepare("UPDATE penanganan_tugas
                        SET catatan_teknisi = COALESCE(NULLIF(:c, ''), catatan_teknisi),
-                           foto_sebelum    = COALESCE(:fs, foto_sebelum),
                            foto_hasil      = COALESCE(:fh, foto_hasil)
                        WHERE id_pengaduan = :id")
-            ->execute([':c' => $catatan, ':fs' => $fotoSebelum, ':fh' => $fotoHasil, ':id' => $idPengaduan]);
+            ->execute([':c' => $catatan, ':fh' => $fotoHasil, ':id' => $idPengaduan]);
         $pesan = 'Catatan dan bukti pengerjaan diperbarui.';
 
     } else {
@@ -90,10 +97,9 @@ try {
         $pdo->prepare("UPDATE penanganan_tugas
                        SET $setWaktu,
                            catatan_teknisi = COALESCE(NULLIF(:c, ''), catatan_teknisi),
-                           foto_sebelum    = COALESCE(:fs, foto_sebelum),
                            foto_hasil      = COALESCE(:fh, foto_hasil)
                        WHERE id_pengaduan = :id")
-            ->execute([':c' => $catatan, ':fs' => $fotoSebelum, ':fh' => $fotoHasil, ':id' => $idPengaduan]);
+            ->execute([':c' => $catatan, ':fh' => $fotoHasil, ':id' => $idPengaduan]);
 
         if ($statusTugas === 'Selesai') {
             catat_riwayat($pdo, $idPengaduan, $idTeknisi, 'Menunggu Review Hasil',
@@ -111,8 +117,7 @@ try {
 
     // Hapus file lama yang tergantikan foto baru
     $pdo->commit();
-    if ($fotoSebelum && !empty($tugas['foto_sebelum'])) hapus_file_upload($tugas['foto_sebelum']);
-    if ($fotoHasil   && !empty($tugas['foto_hasil']))   hapus_file_upload($tugas['foto_hasil']);
+    if ($fotoHasil && $fotoHasilExisting !== '') hapus_file_upload($fotoHasilExisting);
 
     json_response(ambil_pengaduan($pdo, $idPengaduan), $pesan);
 
