@@ -17,7 +17,7 @@
 
   let laporan = [];
   let teknisiAktif = [];
-  const laporanTerpilihUntukEkspor = new Set();
+  const laporanTerpilihUntukDokumen = new Set();
 
   async function muatLaporan() {
     const data = await API.get('verifikator/dashboard.php');
@@ -34,13 +34,13 @@
   /* ==========================================================================
      FILTER (dipakai Dashboard & Statistik)
      ========================================================================== */
-  function isiFilter(prefix) {
+  function isiFilter(prefix, sumber = laporan) {
     const opsi = (selId, ambil) => {
       const sel = $(prefix + selId);
       if (!sel) return;
       const nilai = sel.value;
       const pertama = sel.options[0];
-      const set = new Set(laporan.map(ambil).filter(Boolean));
+      const set = new Set(sumber.map(ambil).filter(Boolean));
       sel.replaceChildren(pertama);
       [...set].sort((a, b) => a.localeCompare(b, 'id')).forEach((v) => {
         const o = document.createElement('option');
@@ -106,110 +106,24 @@
     setText('metricDitolak', hit((l) => l.status === 'Ditolak'));
   }
 
-  function perbaruiKontrolEkspor() {
-    const tbody = $('verifikatorTableBody');
-    const selectAll = $('selectAllReadyReports');
-    const tombolEkspor = $('exportSelectedReports');
-    const terlihat = tbody ? [...tbody.querySelectorAll('input[data-select-report]')].filter((input) =>
-      input.closest('tr').style.display !== 'none') : [];
-    const tercentang = terlihat.filter((input) => input.checked).length;
-
-    if (selectAll) {
-      selectAll.checked = terlihat.length > 0 && tercentang === terlihat.length;
-      selectAll.indeterminate = tercentang > 0 && tercentang < terlihat.length;
-    }
-    if (tombolEkspor) tombolEkspor.disabled = laporanTerpilihUntukEkspor.size === 0;
-    setText('selectedReportCount', laporanTerpilihUntukEkspor.size + ' laporan dipilih');
-  }
-
-  function eksporLaporanTerpilih() {
-    const terpilih = laporan.filter((l) =>
-      l.status === 'Menunggu Verifikasi' && laporanTerpilihUntukEkspor.has(l.id_pengaduan));
-    if (!terpilih.length) {
-      A.showToast('Pilih minimal satu laporan yang siap diteruskan ke pusat.', 'error');
-      return;
-    }
-
-    const amanCsv = (nilai) => {
-      let teks = String(nilai === null || nilai === undefined ? '' : nilai);
-      if (/^[=+\-@]/.test(teks)) teks = "'" + teks;
-      return '"' + teks.replace(/"/g, '""') + '"';
-    };
-    const kolom = ['ID Pengaduan', 'Judul', 'Kategori', 'Ruangan', 'Lantai', 'Pelapor', 'Identitas Pelapor', 'Tanggal Lapor', 'Status', 'Deskripsi', 'Foto Bukti', 'Catatan Teknisi', 'Foto Sebelum', 'Foto Hasil'];
-    const baris = terpilih.map((l) => [
-      l.id_pengaduan, l.judul_laporan, l.nama_kategori, l.nama_ruangan, l.lantai,
-      l.nama_pelapor, l.identitas_pelapor, l.tanggal_lapor, l.status, l.deskripsi,
-      (l.foto_list || []).map((foto) => A.fileUrl(foto)).join(' | '), l.catatan_teknisi,
-      l.foto_sebelum ? A.fileUrl(l.foto_sebelum) : '',
-      l.foto_hasil ? A.fileUrl(l.foto_hasil) : '',
-    ]);
-    const csv = '\uFEFF' + [kolom, ...baris].map((row) => row.map(amanCsv).join(',')).join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const tautan = document.createElement('a');
-    tautan.href = url;
-    tautan.download = 'laporan-siap-diteruskan-' + A.tanggalIso(new Date().toISOString()) + '.csv';
-    document.body.appendChild(tautan);
-    tautan.click();
-    tautan.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    A.showToast(terpilih.length + ' laporan berhasil diekspor.', 'success');
-  }
-
-  function ikatKontrolEkspor() {
-    const tbody = $('verifikatorTableBody');
-    const selectAll = $('selectAllReadyReports');
-    const tombolEkspor = $('exportSelectedReports');
-    if (!tbody || tbody.dataset.batchBound) return;
-    tbody.dataset.batchBound = '1';
-
-    tbody.addEventListener('change', (event) => {
-      const checkbox = event.target.closest('input[data-select-report]');
-      if (!checkbox) return;
-      const id = Number(checkbox.dataset.selectReport);
-      if (checkbox.checked) laporanTerpilihUntukEkspor.add(id);
-      else laporanTerpilihUntukEkspor.delete(id);
-      perbaruiKontrolEkspor();
-    });
-
-    if (selectAll) selectAll.addEventListener('change', () => {
-      tbody.querySelectorAll('input[data-select-report]').forEach((checkbox) => {
-        if (checkbox.closest('tr').style.display === 'none') return;
-        checkbox.checked = selectAll.checked;
-        const id = Number(checkbox.dataset.selectReport);
-        if (checkbox.checked) laporanTerpilihUntukEkspor.add(id);
-        else laporanTerpilihUntukEkspor.delete(id);
-      });
-      perbaruiKontrolEkspor();
-    });
-    if (tombolEkspor) tombolEkspor.addEventListener('click', eksporLaporanTerpilih);
-  }
-
   function renderDashboard() {
     const tbody = $('verifikatorTableBody');
     if (!tbody) return;
-    ikatKontrolEkspor();
     const scrollContainer = $('verifikatorListScroll');
     const posisiScroll = scrollContainer ? scrollContainer.scrollTop : 0;
-    const laporanSiap = new Set(laporan.filter((l) => l.status === 'Menunggu Verifikasi').map((l) => l.id_pengaduan));
-    laporanTerpilihUntukEkspor.forEach((id) => {
-      if (!laporanSiap.has(id)) laporanTerpilihUntukEkspor.delete(id);
-    });
+    const antreanVerifikasi = laporan.filter((l) => l.status === 'Menunggu Verifikasi');
     renderMetrik();
-    isiFilter('dashboard');
+    isiFilter('dashboard', antreanVerifikasi);
 
     tbody.innerHTML = '';
-    if (!laporan.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Belum ada laporan masuk.</td></tr>';
+    if (!antreanVerifikasi.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:24px;">Tidak ada laporan yang menunggu verifikasi.</td></tr>';
     }
 
-    laporan.forEach((l) => {
+    antreanVerifikasi.forEach((l) => {
       const tr = document.createElement('tr');
       tr.dataset.id = l.id_pengaduan;
-      const checkbox = l.status === 'Menunggu Verifikasi'
-        ? '<input type="checkbox" data-select-report="' + l.id_pengaduan + '" aria-label="Pilih laporan #' + l.id_pengaduan + '"' +
-          (laporanTerpilihUntukEkspor.has(l.id_pengaduan) ? ' checked' : '') + '>'
-        : '';
-            const foto = l.foto_list.length
+      const foto = l.foto_list.length
         ? (function () {
             const MAKS = 4;
             const thumbs = l.foto_list.slice(0, MAKS).map(function (f, i) {
@@ -230,7 +144,6 @@
         : '<span class="status-pill ' + A.pillClass(l.status_ui) + '">' + esc(l.status_ui) + '</span>';
 
       tr.innerHTML =
-        '<td class="text-center">' + checkbox + '</td>' +
         '<td><div class="cell-reporter"><div class="cell-avatar">' + esc(A.inisial(l.nama_pelapor)) + '</div><div>' +
         '<span class="cell-name" style="display:block;">' + esc(l.nama_pelapor) + '</span>' +
         '<span class="cell-meta" style="display:block;margin-top:3px;">' + (l.role_pelapor === 'dosen' ? 'NIP' : 'NIM') + ': ' + esc(l.identitas_pelapor || '-') + '</span></div></div></td>' +
@@ -268,8 +181,7 @@
         row.style.display = ok ? '' : 'none';
         if (ok) tampil++;
       });
-      if (hasil) hasil.textContent = 'Menampilkan ' + tampil + ' dari ' + laporan.length + ' laporan.';
-      perbaruiKontrolEkspor();
+      if (hasil) hasil.textContent = 'Menampilkan ' + tampil + ' dari ' + antreanVerifikasi.length + ' laporan yang menunggu verifikasi.';
     };
     if (cariInput && !cariInput.dataset.bound) { cariInput.dataset.bound = '1'; cariInput.addEventListener('input', terapkan); }
     if (!tbody.dataset.filterBound) { tbody.dataset.filterBound = '1'; ikatFilter('dashboard', terapkan); }
@@ -280,6 +192,158 @@
         scrollContainer.scrollTop = Math.min(posisiScroll, Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight));
       });
     }
+  }
+
+  function perbaruiKontrolDokumenPusat() {
+    const tbody = $('laporanPusatTableBody');
+    const selectAll = $('selectAllPusatReports');
+    const tombolEkspor = $('exportPusatReports');
+    const terlihat = tbody ? [...tbody.querySelectorAll('input[data-select-pusat-report]')].filter((input) =>
+      input.closest('tr').style.display !== 'none') : [];
+    const tercentang = terlihat.filter((input) => input.checked).length;
+
+    if (selectAll) {
+      selectAll.checked = terlihat.length > 0 && tercentang === terlihat.length;
+      selectAll.indeterminate = tercentang > 0 && tercentang < terlihat.length;
+    }
+    if (tombolEkspor) tombolEkspor.disabled = laporanTerpilihUntukDokumen.size === 0;
+    setText('selectedPusatReportCount', laporanTerpilihUntukDokumen.size + ' laporan dipilih');
+  }
+
+  function escapeRtf(teks) {
+    let hasil = '';
+    Array.from(String(teks === null || teks === undefined ? '' : teks)).forEach((karakter) => {
+      const kode = karakter.codePointAt(0);
+      if (kode === 10 || kode === 13) {
+        hasil += '\\line ';
+      } else if (kode === 9) {
+        hasil += '\\tab ';
+      } else if (kode === 92 || kode === 123 || kode === 125) {
+        hasil += '\\' + karakter;
+      } else if (kode >= 32 && kode <= 126) {
+        hasil += karakter;
+      } else {
+        const unit = kode > 0xFFFF
+          ? [0xD800 + ((kode - 0x10000) >> 10), 0xDC00 + ((kode - 0x10000) & 0x3FF)]
+          : [kode];
+        hasil += unit.map((nilai) => '\\u' + (nilai > 32767 ? nilai - 65536 : nilai) + '?').join('');
+      }
+    });
+    return hasil;
+  }
+
+  function eksporDokumenPusat() {
+    const terpilih = laporan.filter((l) =>
+      l.status === 'Diteruskan ke Pusat' && laporanTerpilihUntukDokumen.has(l.id_pengaduan));
+    if (!terpilih.length) {
+      A.showToast('Pilih minimal satu laporan yang diteruskan ke pusat.', 'error');
+      return;
+    }
+
+    const paragraf = (label, nilai) =>
+      '\\pard\\sa120\\b ' + escapeRtf(label) + ':\\b0 ' + escapeRtf(nilai || '-') + '\\par\n';
+    const isiLaporan = terpilih.map((l, index) => {
+      const foto = (l.foto_list || []).map((path) => A.fileUrl(path)).join(', ');
+      return '\\pard\\sb240\\sa120\\b\\fs28 ' + (index + 1) + '. Laporan #' + l.id_pengaduan + '\\b0\\fs24\\par\n' +
+        paragraf('Judul', l.judul_laporan) +
+        paragraf('Pelapor', l.nama_pelapor + ' (' + (l.role_pelapor === 'dosen' ? 'NIP' : 'NIM') + ': ' + (l.identitas_pelapor || '-') + ')') +
+        paragraf('Lokasi', l.nama_ruangan + ', lantai ' + l.lantai) +
+        paragraf('Kategori', l.nama_kategori) +
+        paragraf('Tanggal laporan', A.tanggalPanjang(l.tanggal_lapor)) +
+        paragraf('Deskripsi', l.deskripsi) +
+        paragraf('Foto bukti', foto) +
+        paragraf('Catatan teknisi', l.catatan_teknisi);
+    }).join('\\pard\\sa120\\par\n');
+    const rtf = '{\\rtf1\\ansi\\deff0\\uc1{\\fonttbl{\\f0 Arial;}}\\viewkind4\\fs24\n' +
+      '\\pard\\qc\\b\\fs32 SURAT PENGANTAR LAPORAN PENGADUAN\\par\n' +
+      '\\pard\\qc\\b\\fs28 KE UPA PP PUSAT\\b0\\fs24\\par\\par\n' +
+      '\\pard\\sa160 Kepada Yth.\\line UPA PP Pusat\\line di tempat\\par\\par\n' +
+      '\\pard\\qj\\sa180 Dengan hormat, kami meneruskan ' + terpilih.length +
+      ' laporan pengaduan sarana dan prasarana untuk ditindaklanjuti. Rincian laporan adalah sebagai berikut:\\par\n' +
+      isiLaporan +
+      '\\pard\\sa180 Demikian pengantar ini disampaikan. Atas perhatian dan tindak lanjutnya, kami ucapkan terima kasih.\\par\\par\n' +
+      '\\pard\\qr ' + escapeRtf(A.tanggalPanjang(new Date().toISOString())) +
+      '\\line Verifikator ADUIN\\par\\par\\par\\pard\\qr (________________________)\\par}';
+    const url = URL.createObjectURL(new Blob([rtf], { type: 'application/rtf;charset=utf-8' }));
+    const tautan = document.createElement('a');
+    tautan.href = url;
+    tautan.download = 'surat-pengantar-laporan-pusat-' + A.tanggalIso(new Date().toISOString()) + '.rtf';
+    document.body.appendChild(tautan);
+    tautan.click();
+    tautan.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    A.showToast('Dokumen Word untuk ' + terpilih.length + ' laporan berhasil dibuat.', 'success');
+  }
+
+  function renderLaporanPusat() {
+    const tbody = $('laporanPusatTableBody');
+    if (!tbody) return;
+    const daftarPusat = laporan.filter((l) => l.status === 'Diteruskan ke Pusat');
+    const idValid = new Set(daftarPusat.map((l) => l.id_pengaduan));
+    laporanTerpilihUntukDokumen.forEach((id) => {
+      if (!idValid.has(id)) laporanTerpilihUntukDokumen.delete(id);
+    });
+
+    tbody.innerHTML = '';
+    if (!daftarPusat.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:24px;">Belum ada laporan yang diteruskan ke pusat.</td></tr>';
+    }
+
+    daftarPusat.forEach((l) => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = l.id_pengaduan;
+      tr.innerHTML =
+        '<td class="text-center"><input type="checkbox" data-select-pusat-report="' + l.id_pengaduan +
+        '" aria-label="Pilih laporan #' + l.id_pengaduan + '"' +
+        (laporanTerpilihUntukDokumen.has(l.id_pengaduan) ? ' checked' : '') + '></td>' +
+        '<td><span class="cell-meta">#' + l.id_pengaduan + '</span><br><span class="cell-name">' + esc(l.judul_laporan) +
+        '</span><span class="cell-meta" style="display:block;margin-top:4px;">' + esc(l.nama_pelapor) + ' · ' +
+        (l.role_pelapor === 'dosen' ? 'NIP' : 'NIM') + ': ' + esc(l.identitas_pelapor || '-') + '</span></td>' +
+        '<td><span class="cell-name">' + esc(l.nama_ruangan) + '</span><span class="cell-meta" style="display:block;margin-top:4px;">Lantai ' +
+        l.lantai + '</span></td>' +
+        '<td><span class="status-pill">' + esc(l.nama_kategori) + '</span></td>' +
+        '<td>' + A.tanggalJam(l.tanggal_lapor) + '</td>' +
+        '<td><span class="status-pill ' + A.pillClass(l.status) + '">' + esc(l.status) + '</span></td>';
+      tbody.appendChild(tr);
+    });
+
+    const cariInput = $('pusatSearchInput');
+    const terapkanPencarian = () => {
+      const query = cariInput ? cariInput.value.toLowerCase().trim() : '';
+      let tampil = 0;
+      tbody.querySelectorAll('tr[data-id]').forEach((row) => {
+        const cocok = row.textContent.toLowerCase().includes(query);
+        row.style.display = cocok ? '' : 'none';
+        if (cocok) tampil++;
+      });
+      setText('pusatFilterResult', 'Menampilkan ' + tampil + ' dari ' + daftarPusat.length + ' laporan.');
+      perbaruiKontrolDokumenPusat();
+    };
+
+    if (!tbody.dataset.batchBound) {
+      tbody.dataset.batchBound = '1';
+      tbody.addEventListener('change', (event) => {
+        const checkbox = event.target.closest('input[data-select-pusat-report]');
+        if (!checkbox) return;
+        const id = Number(checkbox.dataset.selectPusatReport);
+        if (checkbox.checked) laporanTerpilihUntukDokumen.add(id);
+        else laporanTerpilihUntukDokumen.delete(id);
+        perbaruiKontrolDokumenPusat();
+      });
+      $('selectAllPusatReports').addEventListener('change', (event) => {
+        tbody.querySelectorAll('input[data-select-pusat-report]').forEach((checkbox) => {
+          if (checkbox.closest('tr').style.display === 'none') return;
+          checkbox.checked = event.target.checked;
+          const id = Number(checkbox.dataset.selectPusatReport);
+          if (checkbox.checked) laporanTerpilihUntukDokumen.add(id);
+          else laporanTerpilihUntukDokumen.delete(id);
+        });
+        perbaruiKontrolDokumenPusat();
+      });
+      $('exportPusatReports').addEventListener('click', eksporDokumenPusat);
+      if (cariInput) cariInput.addEventListener('input', terapkanPencarian);
+    }
+    terapkanPencarian();
   }
 
   window.openApproveModal = function (id, judul) {
@@ -901,6 +965,11 @@
         ikatModalDashboard();
         await Promise.all([muatLaporan(), muatTeknisiAktif()]);
         renderDashboard();
+        return;
+      }
+      if ($('laporanPusatTableBody')) {
+        await muatLaporan();
+        renderLaporanPusat();
         return;
       }
       if ($('riwayatList')) {

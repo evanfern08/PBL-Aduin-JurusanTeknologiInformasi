@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diteruskan ke Pusat - ADUIN Verifikator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="dashboard-body">
+  <div class="dashboard-wrapper">
+    <aside class="sidebar-blue" id="sidebarBlue">
+      <div class="sidebar-top">
+        <a href="index.html" class="sidebar-brand" aria-label="ADUIN, kembali ke dashboard">
+          <span class="sidebar-brand-icon" aria-hidden="true"><i class="fa-solid fa-building-columns"></i></span>
+          <span>
+            <h1 class="sidebar-brand-title">ADUIN</h1>
+            <p class="sidebar-brand-subtitle">Facility Reporting</p>
+          </span>
+        </a>
+        <nav class="sidebar-nav" aria-label="Menu utama verifikator">
+          <a href="index.html" class="nav-link"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i><span>Dashboard</span></a>
+          <a href="riwayat.html" class="nav-link"><i class="fa-solid fa-list" aria-hidden="true"></i><span>Daftar Laporan</span></a>
+          <a href="laporan-pusat.html" class="nav-link active" aria-current="page"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i><span>Diteruskan ke Pusat</span></a>
+          <a href="statistik.html" class="nav-link"><i class="fa-solid fa-chart-simple" aria-hidden="true"></i><span>Statistik</span></a>
+          <a href="kelola_teknisi.html" class="nav-link"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Kelola Teknisi</span></a>
+          <a href="kelola_sarpras.html" class="nav-link"><i class="fa-solid fa-warehouse" aria-hidden="true"></i><span>Kelola Sarpras</span></a>
+          <a href="../pengaturan.html" class="nav-link"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Pengaturan</span></a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-user-card">
+          <div class="user-avatar-sm role-verifikator" aria-hidden="true">MA</div>
+          <div class="sidebar-user-info">
+            <h4 class="sidebar-user-name">Mungki Astiningrum, S.T., M.Kom.</h4>
+            <p class="sidebar-user-role">Kepala Jurusan</p>
+          </div>
+        </div>
+        <a href="../login.html" class="btn-logout"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Keluar</span></a>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="content-header">
+        <div>
+          <span class="header-breadcrumb">Verifikator / <strong>Diteruskan ke Pusat</strong></span>
+          <h1 class="header-title">Diteruskan ke Pusat</h1>
+        </div>
+        <div class="session-badge"><span class="dot"></span> Sesi Aktif Kajur</div>
+      </header>
+
+      <main class="content-body">
+        <section class="glass-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Laporan untuk UPA PP Pusat</h2>
+              <p class="card-subtitle">Pilih laporan yang akan dibuatkan surat pengantar untuk UPA PP Pusat.</p>
+            </div>
+          </div>
+          <div class="report-filter-grid">
+            <label class="filter-field">
+              <span class="form-label">Cari laporan</span>
+              <input type="search" id="pusatSearchInput" class="glass-input" placeholder="Cari ID, judul, pelapor, atau lokasi...">
+            </label>
+          </div>
+          <p class="filter-result" id="pusatFilterResult" aria-live="polite"></p>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;">
+            <label class="batch-select-control">
+              <input type="checkbox" id="selectAllPusatReports" aria-label="Select All laporan yang diteruskan ke pusat">
+              <span>Select All</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <span id="selectedPusatReportCount" class="text-muted" aria-live="polite">0 laporan dipilih</span>
+              <button type="button" class="btn btn-success" id="exportPusatReports" disabled>Export Dokumen (Word)</button>
+            </div>
+          </div>
+          <div class="table-wrapper verifikator-list-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="text-center">Pilih</th>
+                  <th>Laporan &amp; Pelapor</th>
+                  <th>Lokasi</th>
+                  <th>Kategori</th>
+                  <th>Tanggal</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="laporanPusatTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script src="verifikator.js"></script>
+</body>
+
+</html>
