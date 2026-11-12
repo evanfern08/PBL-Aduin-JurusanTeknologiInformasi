@@ -1,0 +1,11 @@
+{
+    "name": "aduin/backend",
+    "description": "Backend ADUIN (PHP native di Vercel)",
+    "require": {
+        "php": ">=8.1",
+        "phpoffice/phpword": "^1.2"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

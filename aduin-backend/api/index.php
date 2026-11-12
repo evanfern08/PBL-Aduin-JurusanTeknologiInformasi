@@ -18,6 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $path = ltrim(preg_replace('#^/api/#', '/', $path), '/');
 
+   if ($path === 'export_dokumen.php') {
+       require __DIR__ . '/export_dokumen.php';
+       exit;
+   }
+
 $diizinkan = preg_match('#^(auth|master|pelapor|teknisi|verifikator)/[a-z_]+\.php$#', $path)
           || $path === 'test_koneksi.php';
 $file = __DIR__ . '/../' . $path;
