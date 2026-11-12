@@ -3,6 +3,8 @@
     "description": "Backend ADUIN (PHP native di Vercel)",
     "require": {
         "php": ">=8.1",
+        "ext-zip": "*",
+        "ext-gd": "*",
         "phpoffice/phpword": "^1.2"
     },
     "config": {
