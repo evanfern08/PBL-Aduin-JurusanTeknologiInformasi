@@ -289,6 +289,145 @@
       ).join('');
     selKat.innerHTML = '<option value="">Pilih kategori</option>' +
       kategori.map((k) => '<option value="' + k.id_fasilitas + '">' + esc(k.nama_kategori) + '</option>').join('');
+
+    jadikanDapatDicari(selRuang, 'Cari ruangan...');
+    jadikanDapatDicari(selKat, 'Cari kategori...');
+  }
+
+  /* ------------------------------------------------------------------
+     Dropdown yang bisa dicari. <select> asli tetap dipakai untuk nilai &
+     validasi (disembunyikan secara visual), UI pencarian dibangun di atasnya.
+     ------------------------------------------------------------------ */
+  function jadikanDapatDicari(select, placeholder) {
+    if (!select || select.dataset.searchable) return;
+    select.dataset.searchable = '1';
+
+    // Baca opsi (dengan nama grup bila ada)
+    const items = [];
+    Array.from(select.children).forEach((node) => {
+      if (node.tagName === 'OPTGROUP') {
+        Array.from(node.children).forEach((o) => items.push({ value: o.value, label: o.textContent, group: node.label }));
+      } else if (node.value !== '') {
+        items.push({ value: node.value, label: node.textContent, group: '' });
+      }
+    });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'combo';
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+    select.classList.add('combo-native');
+    select.tabIndex = -1;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'glass-input combo-input';
+    input.placeholder = placeholder;
+    input.autocomplete = 'off';
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-autocomplete', 'list');
+    if (select.id) input.setAttribute('aria-label', placeholder);
+
+    const list = document.createElement('ul');
+    list.className = 'combo-list hidden';
+    list.setAttribute('role', 'listbox');
+    wrap.append(input, list);
+
+    let aktif = -1;      // indeks opsi yang disorot
+    let tampil = [];     // opsi hasil filter
+
+    function normal(t) { return String(t || '').toLowerCase(); }
+
+    function gambar() {
+      const q = normal(input.value.trim());
+      // Bila teks input sama dengan pilihan saat ini, tampilkan semua opsi
+      const dipilih = items.find((i) => i.value === select.value);
+      const tanpaFilter = !q || (dipilih && normal(dipilih.label) === q);
+      tampil = items.filter((i) => tanpaFilter || normal(i.label).indexOf(q) !== -1 || normal(i.group).indexOf(q) !== -1);
+      list.innerHTML = '';
+      if (!tampil.length) {
+        const li = document.createElement('li');
+        li.className = 'combo-empty';
+        li.textContent = 'Tidak ada hasil untuk "' + input.value.trim() + '"';
+        list.appendChild(li);
+        aktif = -1;
+        return;
+      }
+      let grupTerakhir = null;
+      tampil.forEach((it, idx) => {
+        if (it.group && it.group !== grupTerakhir) {
+          const h = document.createElement('li');
+          h.className = 'combo-group';
+          h.textContent = it.group;
+          list.appendChild(h);
+        }
+        grupTerakhir = it.group;
+        const li = document.createElement('li');
+        li.className = 'combo-option' + (it.value === select.value ? ' selected' : '');
+        li.setAttribute('role', 'option');
+        li.dataset.idx = idx;
+        li.textContent = it.label;
+        li.addEventListener('mousedown', (e) => { e.preventDefault(); pilih(it); });
+        list.appendChild(li);
+      });
+      sorot(tampil.findIndex((i) => i.value === select.value));
+    }
+
+    function sorot(idx) {
+      aktif = idx;
+      list.querySelectorAll('.combo-option').forEach((li) => {
+        const on = Number(li.dataset.idx) === idx;
+        li.classList.toggle('active', on);
+        if (on) li.scrollIntoView({ block: 'nearest' });
+      });
+    }
+
+    function buka() {
+      gambar();
+      list.classList.remove('hidden');
+      input.setAttribute('aria-expanded', 'true');
+    }
+    function tutup() {
+      list.classList.add('hidden');
+      input.setAttribute('aria-expanded', 'false');
+      // Kembalikan teks ke pilihan yang berlaku (atau kosong)
+      const dipilih = items.find((i) => i.value === select.value);
+      input.value = dipilih ? dipilih.label : '';
+    }
+    function pilih(it) {
+      select.value = it.value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      input.value = it.label;
+      tutup();
+      input.blur();
+    }
+
+    input.addEventListener('focus', () => { input.select(); buka(); });
+    input.addEventListener('click', () => { if (list.classList.contains('hidden')) buka(); });
+    input.addEventListener('input', () => {
+      // Mengetik berarti pencarian baru: kosongkan pilihan lama sampai memilih lagi
+      select.value = '';
+      list.classList.remove('hidden');
+      input.setAttribute('aria-expanded', 'true');
+      gambar();
+      if (tampil.length) sorot(0);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (list.classList.contains('hidden')) buka(); else if (tampil.length) sorot(Math.min(aktif + 1, tampil.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (tampil.length) sorot(Math.max(aktif - 1, 0)); }
+      else if (e.key === 'Enter') { if (!list.classList.contains('hidden')) { e.preventDefault(); if (tampil[aktif]) pilih(tampil[aktif]); } }
+      else if (e.key === 'Escape') { tutup(); }
+    });
+    input.addEventListener('blur', tutup);
+
+    // Jika <select> diubah dari luar (mis. form di-reset), sinkronkan teks
+    select.addEventListener('change', () => {
+      const d = items.find((i) => i.value === select.value);
+      input.value = d ? d.label : '';
+    });
+    // Pesan validasi "wajib diisi" muncul pada kolom pencarian
+    select.addEventListener('invalid', () => { input.focus(); });
   }
 
   function initFormLaporan() {
