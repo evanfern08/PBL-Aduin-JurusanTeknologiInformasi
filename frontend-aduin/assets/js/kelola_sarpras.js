@@ -1,8 +1,4 @@
-/**
- * kelola_sarpras.js - Halaman Kelola Sarpras (verifikator).
- * Data = tabel kategori_fasilitas. Daftar: GET master/kategori.php,
- * simpan/hapus: verifikator/kelola_sarpras.php.
- */
+
 (function () {
   'use strict';
 
@@ -11,7 +7,7 @@
   const esc = A.escapeHtml;
   const toast = (msg, tipe) => A.showToast(msg, tipe);
   const sesi = A.getSession();
-  if (!sesi) return; // guard() di api.js sudah mengarahkan ke login
+  if (!sesi) return; 
 
   let daftar = [];
 
