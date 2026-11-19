@@ -196,14 +196,52 @@
     set('detailTanggal', A.tanggalJam(t.waktu_selesai));
     set('detailDeskripsi', t.catatan_teknisi || '-');
 
-    // Bukti foto pengerjaan
-    const body = modal.querySelector('.modal-body');
-    let fotoBox = document.getElementById('detailFotoTeknisi');
-    if (!fotoBox) { fotoBox = document.createElement('div'); fotoBox.id = 'detailFotoTeknisi'; fotoBox.style.marginTop = '12px'; body.appendChild(fotoBox); }
-    const foto = (judul, path) => path
-      ? '<div><strong>' + judul + '</strong><br><a href="' + esc(A.fileUrl(path)) + '" target="_blank" rel="noopener"><img src="' + esc(A.fileUrl(path)) +
-      '" alt="' + judul + '" style="max-width:100%;max-height:160px;border-radius:8px;margin-top:6px;border:1px solid #e2e8f0;"></a></div>' : '';
-    fotoBox.innerHTML = foto('Foto sebelum', t.foto_sebelum) + foto('Foto sesudah', t.foto_hasil);
+    // --- RENDER FOTO SEBELUM ---
+    const boxSebelum = document.getElementById('detailFotoSebelum');
+    const fotoSebelumArr = t.foto_list ? t.foto_list : (t.foto_sebelum ? [t.foto_sebelum] : []);
+    if (boxSebelum) {
+      if (fotoSebelumArr.length === 0) {
+        boxSebelum.innerHTML = '<span class="detail-photo-empty">Tidak ada foto</span>';
+      } else {
+        boxSebelum.innerHTML = fotoSebelumArr.map((path, index) => `
+          <a href="javascript:void(0)" class="btn-trigger-lightbox" data-kategori="sebelum" data-index="${index}">
+            <img src="${esc(A.fileUrl(path))}" alt="Foto Sebelum ${index + 1}" loading="lazy">
+          </a>
+        `).join('');
+      }
+    }
+
+    // --- RENDER FOTO SESUDAH ---
+    const boxSesudah = document.getElementById('detailFotoSesudah');
+    const fotoSesudahArr = Array.isArray(t.foto_hasil) ? t.foto_hasil : (t.foto_hasil ? [t.foto_hasil] : []);
+    if (boxSesudah) {
+      if (fotoSesudahArr.length === 0) {
+        boxSesudah.innerHTML = '<span class="detail-photo-empty">Belum ada foto hasil pengerjaan</span>';
+      } else {
+        boxSesudah.innerHTML = fotoSesudahArr.map((path, index) => `
+          <a href="javascript:void(0)" class="btn-trigger-lightbox" data-kategori="sesudah" data-index="${index}">
+            <img src="${esc(A.fileUrl(path))}" alt="Foto Sesudah ${index + 1}" loading="lazy">
+          </a>
+        `).join('');
+      }
+    }
+
+    // --- EVENT LISTENER KLIK FOTO ---
+    const semuaLinkFoto = modal.querySelectorAll('.btn-trigger-lightbox');
+    semuaLinkFoto.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const kategori = this.getAttribute('data-kategori');
+        const index = parseInt(this.getAttribute('data-index'), 10);
+        
+        // Tentukan daftar URL berdasarkan kategori yang diklik
+        const arrUrl = kategori === 'sebelum' 
+          ? fotoSebelumArr.map(p => A.fileUrl(p)) 
+          : fotoSesudahArr.map(p => A.fileUrl(p));
+          
+        window.bukaLightbox(arrUrl, index, kategori === 'sebelum' ? 'Foto Sebelum' : 'Foto Sesudah');
+      });
+    });
 
     modal.classList.remove('hidden');
     modal.classList.add('active');
@@ -526,4 +564,120 @@
       });
     }
   });
+  /* ================================================================
+     FUNGSI LIGHTBOX CAROUSEL / SLIDER (Mendukung Swipe & Keyboard)
+     ================================================================ */
+  let currentLightboxUrls = [];
+  let currentLightboxIndex = 0;
+  let currentLightboxCategory = '';
+
+  window.bukaLightbox = function(urls, index, categoryName) {
+    currentLightboxUrls = urls;
+    currentLightboxIndex = index;
+    currentLightboxCategory = categoryName;
+
+    let lightbox = document.getElementById('customLightbox');
+    
+    // Jika belum ada, buat struktur DOM-nya
+    if (!lightbox) {
+      lightbox = document.createElement('div');
+      lightbox.id = 'customLightbox';
+      lightbox.className = 'gallery-lightbox hidden';
+      lightbox.innerHTML = `
+        <button type="button" class="gallery-lightbox-close" onclick="window.tutupLightbox()">✕</button>
+        <div class="gallery-lightbox-stage">
+          <button type="button" id="lbPrev" class="gallery-nav-btn gallery-nav-prev" onclick="window.navLightbox(-1)">&#10094;</button>
+          <img id="lightboxImage" class="gallery-lightbox-img" src="" alt="Preview Foto">
+          <button type="button" id="lbNext" class="gallery-nav-btn gallery-nav-next" onclick="window.navLightbox(1)">&#10095;</button>
+        </div>
+        <div class="gallery-lightbox-caption" id="lbCaption"></div>
+        <div class="gallery-lightbox-dots" id="lbDots"></div>
+      `;
+      document.body.appendChild(lightbox);
+      
+      // Klik area luar untuk tutup
+      lightbox.addEventListener('click', function(e) {
+        if (e.target === lightbox || e.target.classList.contains('gallery-lightbox-stage')) window.tutupLightbox();
+      });
+
+      // Dukungan Swipe Layar Sentuh
+      let touchStartX = 0;
+      lightbox.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      
+      lightbox.addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) window.navLightbox(1); // Swipe kiri -> Next
+        if (touchEndX - touchStartX > 50) window.navLightbox(-1); // Swipe kanan -> Prev
+      }, { passive: true });
+    }
+
+    document.body.style.overflow = 'hidden';
+    lightbox.classList.remove('hidden');
+    updateLightboxView();
+  };
+
+  window.tutupLightbox = function() {
+    const lightbox = document.getElementById('customLightbox');
+    if (lightbox) {
+      lightbox.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  };
+
+  window.navLightbox = function(step) {
+    if (currentLightboxUrls.length <= 1) return;
+    
+    currentLightboxIndex += step;
+    // Putar balik (loop) jika di ujung
+    if (currentLightboxIndex >= currentLightboxUrls.length) currentLightboxIndex = 0;
+    if (currentLightboxIndex < 0) currentLightboxIndex = currentLightboxUrls.length - 1;
+    
+    updateLightboxView();
+  };
+
+  function updateLightboxView() {
+    const img = document.getElementById('lightboxImage');
+    const caption = document.getElementById('lbCaption');
+    const dotsContainer = document.getElementById('lbDots');
+    const btnPrev = document.getElementById('lbPrev');
+    const btnNext = document.getElementById('lbNext');
+    
+    // Set Gambar
+    img.src = currentLightboxUrls[currentLightboxIndex];
+    
+    // Set Caption & Indikator
+    caption.textContent = `${currentLightboxCategory} (${currentLightboxIndex + 1} / ${currentLightboxUrls.length})`;
+    
+    // Sembunyikan tombol panah jika foto cuma 1
+    const isSingle = currentLightboxUrls.length <= 1;
+    btnPrev.style.display = isSingle ? 'none' : 'flex';
+    btnNext.style.display = isSingle ? 'none' : 'flex';
+
+    // Render Titik-titik Indikator (Dots)
+    if (dotsContainer) {
+      dotsContainer.innerHTML = currentLightboxUrls.map((_, i) => 
+        `<button type="button" class="gallery-dot ${i === currentLightboxIndex ? 'active' : ''}" onclick="window.jumpLightbox(${i})"></button>`
+      ).join('');
+    }
+  }
+
+  window.jumpLightbox = function(index) {
+    currentLightboxIndex = index;
+    updateLightboxView();
+  };
+
+  // Dukungan Keyboard Navigasi
+  document.addEventListener('keydown', (e) => {
+    const lightbox = document.getElementById('customLightbox');
+    if (!lightbox || lightbox.classList.contains('hidden')) return;
+
+    if (e.key === 'ArrowRight') window.navLightbox(1);
+    if (e.key === 'ArrowLeft') window.navLightbox(-1);
+    if (e.key === 'Escape') window.tutupLightbox();
+  });
+  /* ================================================================
+     BATAS AKHIR FUNGSI LIGHTBOX
+     ================================================================ */
 })();
