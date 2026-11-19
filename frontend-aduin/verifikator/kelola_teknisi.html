@@ -92,15 +92,23 @@
                         <h2 class="card-title" style="margin: 0;">Daftar Teknisi Sarpras</h2>
                         <p class="card-subtitle">Kelola data teknisi, spesialisasi, dan status ketersediaan.</p>
                     </div>
-                    <button type="button" class="btn btn-success" onclick="bukaModalTeknisi()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                        Tambah Teknisi Baru
-                    </button>
+                    <div class="page-actions">
+                        <label class="search-control">
+                            <span class="sr-only">Cari teknisi</span>
+                            <input type="search" id="teknisiSearchInput" class="glass-input"
+                                placeholder="Cari nama, ID/NIP, spesialisasi...">
+                        </label>
+                        <button type="button" class="btn btn-success" onclick="bukaModalTeknisi()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Tambah Teknisi Baru
+                        </button>
+                    </div>
                 </div>
+                <p id="teknisiSearchResult" class="filter-result" aria-live="polite"></p>
 
                 <!-- Table -->
                 <div class="glass-card" style="padding: 0; overflow: hidden;">

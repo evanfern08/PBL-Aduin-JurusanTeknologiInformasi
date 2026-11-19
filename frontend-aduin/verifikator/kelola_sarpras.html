@@ -87,15 +87,23 @@
             <h2 class="card-title" style="margin:0;">Daftar Sarana & Prasarana</h2>
             <p class="card-subtitle">Kelola master data fasilitas untuk pelaporan.</p>
           </div>
-          <button type="button" class="btn btn-success" onclick="bukaModalFasilitas()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Tambah Sarpras
-          </button>
+          <div class="page-actions">
+            <label class="search-control">
+              <span class="sr-only">Cari sarana dan prasarana</span>
+              <input type="search" id="sarprasSearchInput" class="glass-input"
+                placeholder="Cari nama atau deskripsi sarpras...">
+            </label>
+            <button type="button" class="btn btn-success" onclick="bukaModalFasilitas()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Tambah Sarpras
+            </button>
+          </div>
         </div>
+        <p id="sarprasSearchResult" class="filter-result" aria-live="polite"></p>
 
         <div class="glass-card" style="padding:0;overflow:hidden;">
           <div class="table-wrapper">

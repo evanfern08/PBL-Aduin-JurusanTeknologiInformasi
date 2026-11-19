@@ -42,7 +42,14 @@
           <h1 class="header-title">Daftar Laporan</h1>
           <p class="header-subtitle">Lacak riwayat dan status laporan kerusakan yang sudah kamu kirim.</p>
         </div>
-        <a href="laporan.html" class="btn btn-success">Buat Laporan Baru</a>
+        <div class="page-actions">
+          <label class="search-control">
+            <span class="sr-only">Cari laporan</span>
+            <input type="search" id="reportSearchInput" class="glass-input"
+              placeholder="Cari ID, judul, lokasi, atau kategori...">
+          </label>
+          <a href="laporan.html" class="btn btn-success">Buat Laporan Baru</a>
+        </div>
       </header>
       <main class="content-body">
         <section class="glass-card" aria-labelledby="history-title">
@@ -59,6 +66,7 @@
             <button type="button" data-report-filter="Selesai" class="filter-pill" aria-pressed="false">Selesai</button>
             <button type="button" data-report-filter="Dikembalikan ke Pelapor" class="filter-pill" aria-pressed="false">Dikembalikan</button>
           </div>
+          <p id="reportSearchResult" class="filter-result" aria-live="polite"></p>
         </section>
         <section id="reports-list" class="riwayat-list" aria-label="Daftar laporan" aria-live="polite"></section>
       </main>

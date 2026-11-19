@@ -116,7 +116,7 @@
     const urlBukti = r.foto_list.map((f) => A.fileUrl(f));              // TAMBAH
     const urlHasil = (r.foto_hasil_list || []).map((f) => A.fileUrl(f)); // TAMBAH
     modal.innerHTML =
-      '<div class="modal-box" style="max-width:560px;max-height:90vh;overflow:auto;">' +
+      '<div class="modal-box modal-box-scroll report-detail-modal">' +
       '<div class="modal-header"><div><h3 class="modal-title">' + esc(r.judul_laporan) + '</h3>' +
       '<span class="modal-subtitle">#' + r.id_pengaduan + ' · ' + esc(r.nama_ruangan) + '</span></div>' +
       '<button type="button" class="modal-close" id="close-modal">&times;</button></div>' +
@@ -142,12 +142,24 @@
     if (!list) return;
     const filter = list.dataset.filter || 'all';
     list.replaceChildren();
-    const tampil = semuaLaporan.filter((r) => filter === 'all' || A.statusUntukPelapor(r.status_ui) === filter);
+    const query = (document.getElementById('reportSearchInput')?.value || '').trim().toLowerCase();
+    const tampil = semuaLaporan.filter((r) => {
+      const cocokStatus = filter === 'all' || A.statusUntukPelapor(r.status_ui) === filter;
+      const cocokCari = [
+        r.id_pengaduan, r.judul_laporan, r.nama_ruangan, r.nama_kategori,
+        r.nama_pelapor, r.deskripsi, A.statusUntukPelapor(r.status_ui),
+      ].some((value) => String(value || '').toLowerCase().includes(query));
+      return cocokStatus && cocokCari;
+    });
+    const result = document.getElementById('reportSearchResult');
+    if (result) result.textContent = query
+      ? 'Menampilkan ' + tampil.length + ' laporan yang cocok.'
+      : '';
     tampil.forEach((r) => list.append(kartuLaporan(r)));
     if (!tampil.length) {
       const p = document.createElement('p');
       p.className = 'glass-card text-muted';
-      p.textContent = 'Belum ada laporan untuk status ini.';
+      p.textContent = query ? 'Laporan tidak ditemukan.' : 'Belum ada laporan untuk status ini.';
       list.append(p);
     }
   }
@@ -155,6 +167,8 @@
   function initFilter() {
     const list = document.getElementById('reports-list');
     if (!list) return;
+    const search = document.getElementById('reportSearchInput');
+    if (search) search.addEventListener('input', renderDaftar);
     document.querySelectorAll('[data-report-filter]').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-report-filter]').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });

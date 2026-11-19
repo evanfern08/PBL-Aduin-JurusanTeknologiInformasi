@@ -960,6 +960,33 @@ select.glass-input { cursor: pointer; }
   font-weight: 600;
 }
 
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-control {
+  display: block;
+  width: min(320px, 100%);
+}
+
+.search-control .glass-input { width: 100%; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .combined-chart-card { width: 100%; }
 
 .chart-panels {
@@ -1692,6 +1719,9 @@ select.glass-input { cursor: pointer; }
 }
 
 @media (max-width: 560px) {
+  .page-actions { width: 100%; align-items: stretch; }
+  .page-actions .search-control,
+  .page-actions .btn { width: 100%; }
   .metric-grid { grid-template-columns: 1fr; }
   .report-filter-grid,
   .chart-panels { grid-template-columns: 1fr; }
@@ -1701,6 +1731,7 @@ select.glass-input { cursor: pointer; }
     border-left: 0;
     border-top: 1px solid var(--line);
   }
+
   .glass-card { padding: 20px; border-radius: var(--radius-lg); }
   .header-title, .page-title { font-size: 17px; }
   .metric-value { font-size: 24px; }
@@ -1986,6 +2017,16 @@ select.glass-input { cursor: pointer; }
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+
+.modal-overlay .modal-box.report-detail-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  max-height: 80dvh;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
 }
 
 /* --------------------------------------------------------------------------

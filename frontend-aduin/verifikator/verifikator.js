@@ -688,9 +688,20 @@
         if (!tbody) return;
         if (!daftarTeknisi.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:32px;color:var(--muted);">Belum ada data teknisi.</td></tr>';
+            setText('teknisiSearchResult', 'Belum ada data teknisi.');
             return;
         }
-        tbody.innerHTML = daftarTeknisi.map((t, i) => {
+        const query = ($('teknisiSearchInput')?.value || '').trim().toLowerCase();
+        const hasil = daftarTeknisi.filter((t) =>
+            [t.nama, t.email, t.nip, t.spesialisasi, t.status]
+                .some((value) => String(value || '').toLowerCase().includes(query))
+        );
+        setText('teknisiSearchResult', 'Menampilkan ' + hasil.length + ' dari ' + daftarTeknisi.length + ' teknisi.');
+        if (!hasil.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:32px;color:var(--muted);">Teknisi tidak ditemukan.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = hasil.map((t, i) => {
             const st = t.status === 'Aktif' ? 'status-pill-success' : t.status === 'Cuti' ? 'status-pill-warning' : 'status-pill-danger';
             const tg = t.tugas_berjalan > 0 ? 'status-pill-info' : 'status-pill-neutral';
             return '<tr><td class="text-center" style="color:var(--muted);font-weight:700;">' + (i + 1) + '</td>' +
@@ -768,7 +779,11 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            if ($('tabelTeknisiBody')) { await muatTeknisi(); return; }
+            if ($('tabelTeknisiBody')) {
+                $('teknisiSearchInput')?.addEventListener('input', renderTabelTeknisi);
+                await muatTeknisi();
+                return;
+            }
 
             if ($('verifikatorTableBody')) {
                 ikatModalDashboard();

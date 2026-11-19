@@ -27,9 +27,21 @@
     if (!tbody) return;
     if (!daftar.length) {
       tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:32px;color:var(--muted);">Belum ada data sarpras.</td></tr>';
+      const result = document.getElementById('sarprasSearchResult');
+      if (result) result.textContent = 'Belum ada data sarpras.';
       return;
     }
-    tbody.innerHTML = daftar.map((it, i) => `
+    const query = (document.getElementById('sarprasSearchInput')?.value || '').trim().toLowerCase();
+    const hasil = daftar.filter((it) =>
+      [it.nama_kategori, it.deskripsi].some((value) => String(value || '').toLowerCase().includes(query))
+    );
+    const result = document.getElementById('sarprasSearchResult');
+    if (result) result.textContent = 'Menampilkan ' + hasil.length + ' dari ' + daftar.length + ' sarpras.';
+    if (!hasil.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding:32px;color:var(--muted);">Sarpras tidak ditemukan.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = hasil.map((it, i) => `
       <tr>
         <td class="text-center" style="color:var(--muted);font-weight:700;">${i + 1}</td>
         <td><span class="cell-name">${esc(it.nama_kategori)}</span></td>
@@ -105,5 +117,9 @@
     }
   };
 
-  document.addEventListener('DOMContentLoaded', muat);
+  document.addEventListener('DOMContentLoaded', () => {
+    const search = document.getElementById('sarprasSearchInput');
+    if (search) search.addEventListener('input', render);
+    muat();
+  });
 })();
