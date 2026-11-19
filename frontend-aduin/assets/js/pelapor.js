@@ -37,8 +37,8 @@
       const tercapai = status === 'Selesai' || i < aktif;
       const sedang = i === aktif && status !== 'Selesai';
       const cls = status === 'Selesai' ? ' success' : tercapai ? ' done' : sedang ? ' active' : '';
-      return '<div class="timeline-node' + cls + '"><div class="timeline-dot">' + (tercapai ? '✓' : i + 1) +
-        '</div><span class="timeline-caption">' + esc(l.label) + '</span><span class="timeline-sub">' + esc(l.sub) + '</span></div>';
+      return '<div class="timeline-node' + cls + '"><button type="button" class="timeline-dot" aria-label="Lihat detail laporan, progres ' + esc(l.label) + '">' + (tercapai ? '✓' : i + 1) +
+        '</button><span class="timeline-caption">' + esc(l.label) + '</span><span class="timeline-sub">' + esc(l.sub) + '</span></div>';
     }).join('');
 
     return '<div class="timeline-wrap"><p class="timeline-label">PROGRES LAPORAN</p><div class="timeline">' + nodes + '</div></div>';
@@ -96,7 +96,13 @@
     }
     html += progresLaporan(r);
     card.innerHTML = html;
-        card.addEventListener('click', (e) => {
+    card.querySelectorAll('.timeline-dot').forEach((dot) => {
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        bukaDetail(r);
+      });
+    });
+    card.addEventListener('click', (e) => {
       if (e.target.closest('.aduin-gallery__item')) return;   // klik foto = buka viewer, bukan modal
       bukaDetail(r);
     });

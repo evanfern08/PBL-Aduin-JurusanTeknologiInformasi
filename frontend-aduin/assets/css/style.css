@@ -1181,9 +1181,16 @@ select.glass-input { cursor: pointer; }
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  max-width: 1080px;
+  align-self: center;
 }
 
-.riwayat-card { padding: 22px; }
+.riwayat-card {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px;
+}
 
 .riwayat-head {
   display: flex;
@@ -1239,16 +1246,29 @@ select.glass-input { cursor: pointer; }
 .timeline-dot {
   width: 32px;
   height: 32px;
+  padding: 0;
   border-radius: 50%;
   background: var(--white);
   border: 2px solid #e2e7ef;
   color: #94a3b8;
   font-size: 13px;
   font-weight: 800;
+  font-family: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.timeline-dot:hover {
+  transform: scale(1.08);
+}
+
+.timeline-dot:focus-visible {
+  outline: 3px solid rgba(48, 175, 254, 0.45);
+  outline-offset: 3px;
 }
 
 /* Warna dot saat done */
@@ -2021,12 +2041,26 @@ select.glass-input { cursor: pointer; }
 
 .modal-overlay .modal-box.report-detail-modal {
   width: 100%;
-  max-width: 560px;
-  max-height: 80vh;
-  max-height: 80dvh;
+  max-width: 500px;
+  max-height: 78vh;
+  max-height: 78dvh;
   padding: 0;
   gap: 0;
   overflow: hidden;
+}
+
+@media (max-width: 560px) {
+  .riwayat-list { gap: 12px; }
+  .riwayat-card { padding: 16px; }
+  .riwayat-head { gap: 10px; }
+  .timeline-dot { width: 28px; height: 28px; }
+  .timeline-caption { font-size: 11px; }
+  .timeline-sub { font-size: 10px; max-width: 72px; }
+  .modal-overlay .modal-box.report-detail-modal {
+    max-width: 420px;
+    max-height: 76vh;
+    max-height: 76dvh;
+  }
 }
 
 /* --------------------------------------------------------------------------
