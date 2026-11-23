@@ -111,6 +111,26 @@
           </div>
         </section>
 
+        <section class="glass-card report-summary-card" id="ringkasanLaporanCard" aria-live="polite">
+          <div class="report-summary-header">
+            <div>
+              <h2 class="card-title">Ringkasan laporan</h2>
+              <p class="card-subtitle">Seluruh laporan yang telah dikirim pelapor</p>
+            </div>
+            <div class="report-summary-total">
+              <span>Total laporan</span>
+              <strong id="ringkasanTotal">-</strong>
+            </div>
+          </div>
+          <div class="report-summary-grid" id="ringkasanGrid">
+            <p class="report-summary-loading">Memuat ringkasan laporan...</p>
+          </div>
+          <div class="report-summary-error hidden" id="ringkasanError">
+            <p id="ringkasanErrorMessage">Gagal memuat ringkasan laporan.</p>
+            <button type="button" class="btn btn-ghost" id="ringkasanRetry">Coba lagi</button>
+          </div>
+        </section>
+
         <section class="glass-card">
           <div class="card-header">
             <div>

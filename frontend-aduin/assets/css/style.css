@@ -676,6 +676,145 @@ select.glass-input { cursor: pointer; }
   font-weight: 600;
 }
 
+.report-summary-card {
+  padding: 20px 22px 22px;
+}
+
+.report-summary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.report-summary-header .card-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.report-summary-header .card-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.report-summary-total {
+  text-align: right;
+  color: var(--muted);
+  line-height: 1.1;
+}
+
+.report-summary-total span {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.report-summary-total strong {
+  display: block;
+  color: var(--ink);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.report-summary-loading {
+  grid-column: 1 / -1;
+  margin: 0;
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: #fafcff;
+}
+
+.report-summary-item {
+  min-width: 0;
+  min-height: 126px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.report-summary-item:hover,
+.report-summary-item:focus-visible {
+  border-color: #94b9dc;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.report-summary-item-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.report-summary-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+.report-summary-count {
+  display: block;
+  margin-top: 8px;
+  color: var(--navy);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-summary-percent {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.summary-yellow .report-summary-icon { background: #fef3c7; color: #a16207; }
+.summary-purple .report-summary-icon { background: #ede9fe; color: #7c3aed; }
+.summary-blue .report-summary-icon { background: #dbeafe; color: #2563eb; }
+.summary-tosca .report-summary-icon { background: #ccfbf1; color: #0f766e; }
+.summary-green .report-summary-icon { background: #dcfce7; color: #16a34a; }
+.summary-red .report-summary-icon { background: #fee2e2; color: #dc2626; }
+
+.report-summary-error {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  background: #fff7f7;
+}
+
 /* --------------------------------------------------------------------------
    8. CARD HEADER
    -------------------------------------------------------------------------- */
@@ -1639,6 +1778,7 @@ select.glass-input { cursor: pointer; }
   .dashboard-wrapper,
   .app-layout,
   .layout-with-sidebar { flex-direction: row; }
+  .report-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .sidebar-blue {
     position: fixed;
@@ -1743,6 +1883,8 @@ select.glass-input { cursor: pointer; }
   .page-actions .search-control,
   .page-actions .btn { width: 100%; }
   .metric-grid { grid-template-columns: 1fr; }
+  .report-summary-grid { grid-template-columns: 1fr; }
+  .report-summary-header { align-items: center; }
   .report-filter-grid,
   .chart-panels { grid-template-columns: 1fr; }
   .chart-panel + .chart-panel {

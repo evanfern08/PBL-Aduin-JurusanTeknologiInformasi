@@ -23,7 +23,7 @@ $path = ltrim(preg_replace('#^/api/#', '/', $path), '/');
        exit;
    }
 
-$diizinkan = preg_match('#^(auth|master|pelapor|teknisi|verifikator)/[a-z_]+\.php$#', $path)
+$diizinkan = preg_match('#^(auth|master|pelapor|teknisi|verifikator|statistik)/[a-z_]+\.php$#', $path)
           || $path === 'test_koneksi.php';
 $file = __DIR__ . '/../' . $path;
 
