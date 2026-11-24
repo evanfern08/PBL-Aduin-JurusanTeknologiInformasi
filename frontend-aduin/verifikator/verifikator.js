@@ -848,8 +848,9 @@
             { label: 'Selesai', status: 'selesai', icon: 'fa-circle-check', theme: 'summary-green', matches: ['Selesai'] },
             { label: 'Ditolak', status: 'ditolak', icon: 'fa-circle-xmark', theme: 'summary-red', matches: ['Ditolak'] },
         ];
-        setText('ringkasanTotal', data.length);
+        A.animateCountUp($('ringkasanTotal'), data.length);
         grid.classList.remove('hidden');
+        grid.removeAttribute('aria-busy');
         const errorBox = $('ringkasanError');
         if (errorBox) errorBox.classList.add('hidden');
         grid.innerHTML = kartu.map((item) => {
@@ -857,10 +858,12 @@
             const persen = data.length ? Math.round((jumlah / data.length) * 100) : 0;
             return '<button type="button" class="report-summary-item ' + item.theme + '" data-status="' + item.status + '" aria-label="' + esc(item.label) + ': ' + jumlah + ' laporan">' +
                 '<span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid ' + item.icon + '" aria-hidden="true"></i></span><span>' + esc(item.label) + '</span></span>' +
-                '<strong class="report-summary-count">' + jumlah + '</strong>' +
-                '<span class="report-summary-percent">' + persen + '% dari total</span>' +
+                '<strong class="report-summary-count" data-count-value="' + jumlah + '">0</strong>' +
+                '<span class="report-summary-percent" data-count-percent="' + persen + '">0% dari total</span>' +
                 '</button>';
         }).join('');
+        grid.querySelectorAll('[data-count-value]').forEach((el) => A.animateCountUp(el, Number(el.dataset.countValue)));
+        grid.querySelectorAll('[data-count-percent]').forEach((el) => A.animateCountUp(el, Number(el.dataset.countPercent), '% dari total'));
         grid.querySelectorAll('[data-status]').forEach((item) => {
             item.addEventListener('click', () => {
                 window.location.href = 'riwayat.html?status=' + encodeURIComponent(item.dataset.status);

@@ -48,7 +48,7 @@
      Dashboard (index.html)
      ------------------------------------------------------------------ */
   function renderDashboard() {
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v); };
+    const set = (id, v) => A.animateCountUp(document.getElementById(id), v);
     const st = (r) => A.statusUntukPelapor(r.status_ui);
     set('total-reports', semuaLaporan.length);
     set('pending-reports', semuaLaporan.filter((r) => st(r) === 'Menunggu Verifikasi').length);

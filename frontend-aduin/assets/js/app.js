@@ -8,6 +8,34 @@
 
   const A = window.ADUIN;
   const API = A.API;
+  const countUpFrames = new WeakMap();
+
+  A.animateCountUp = function (element, value, suffix) {
+    if (!element) return;
+    const target = Number(value);
+    if (!Number.isFinite(target)) throw new TypeError('Nilai count-up harus berupa angka.');
+
+    const frame = countUpFrames.get(element);
+    if (frame) cancelAnimationFrame(frame);
+
+    const akhir = Math.round(target);
+    const akhiran = suffix || '';
+    const mulai = performance.now();
+    const durasi = 900;
+    const animasikan = (waktu) => {
+      const progress = Math.min((waktu - mulai) / durasi, 1);
+      const easing = 1 - Math.pow(1 - progress, 3);
+      element.textContent = String(Math.round(akhir * easing)) + akhiran;
+      if (progress < 1) {
+        countUpFrames.set(element, requestAnimationFrame(animasikan));
+      } else {
+        countUpFrames.delete(element);
+        element.textContent = String(akhir) + akhiran;
+      }
+    };
+
+    countUpFrames.set(element, requestAnimationFrame(animasikan));
+  };
 
   /* ==========================================================================
      1. SIDEBAR RESPONSIF (HAMBURGER)

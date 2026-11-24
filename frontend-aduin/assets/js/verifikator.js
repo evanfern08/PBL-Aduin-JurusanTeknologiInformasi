@@ -473,7 +473,10 @@
       '<div class="report-skeleton-line short"></div><div class="report-skeleton-line long"></div>' +
       '<div class="report-skeleton-timeline"><span></span><span></span><span></span><span></span><span></span></div></div>'
     ).join('');
-    $('reportPagination').classList.add('hidden');
+    const pagination = $('reportPagination');
+    pagination.classList.remove('hidden');
+    pagination.setAttribute('aria-busy', 'true');
+    pagination.innerHTML = '<div class="report-pagination-info"><span class="report-skeleton-line" aria-hidden="true" style="display:inline-block;width:11em;height:1em;margin:0;"></span></div>';
   }
 
   function buatStateRiwayat(pesan, tombol) {
@@ -486,6 +489,7 @@
 
   function renderPaginationRiwayat() {
     const pagination = $('reportPagination');
+    pagination.removeAttribute('aria-busy');
     if (!metaRiwayat) {
       pagination.classList.add('hidden');
       return;
@@ -576,6 +580,7 @@
         aksi: muatHalamanRiwayat,
       });
       metaRiwayat = null;
+      renderPaginationRiwayat();
     }
   }
 

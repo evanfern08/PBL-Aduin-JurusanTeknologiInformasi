@@ -119,11 +119,40 @@
             </div>
             <div class="report-summary-total">
               <span>Total laporan</span>
-              <strong id="ringkasanTotal">-</strong>
+              <strong id="ringkasanTotal"><span class="report-skeleton-line" aria-hidden="true" style="display:inline-block;width:3ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
             </div>
           </div>
-          <div class="report-summary-grid" id="ringkasanGrid">
-            <p class="report-summary-loading">Memuat ringkasan laporan...</p>
+          <div class="report-summary-grid" id="ringkasanGrid" aria-busy="true">
+            <div class="report-summary-item summary-yellow" aria-hidden="true">
+              <span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid fa-hourglass-half"></i></span><span>Menunggu Verifikasi</span></span>
+              <strong class="report-summary-count"><span class="report-skeleton-line" style="display:inline-block;width:2ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
+              <span class="report-summary-percent"><span class="report-skeleton-line" style="display:inline-block;width:4ch;height:1em;margin:0;vertical-align:middle;"></span></span>
+            </div>
+            <div class="report-summary-item summary-purple" aria-hidden="true">
+              <span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid fa-building"></i></span><span>Diteruskan ke Pusat</span></span>
+              <strong class="report-summary-count"><span class="report-skeleton-line" style="display:inline-block;width:2ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
+              <span class="report-summary-percent"><span class="report-skeleton-line" style="display:inline-block;width:4ch;height:1em;margin:0;vertical-align:middle;"></span></span>
+            </div>
+            <div class="report-summary-item summary-blue" aria-hidden="true">
+              <span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span><span>Dalam Perbaikan</span></span>
+              <strong class="report-summary-count"><span class="report-skeleton-line" style="display:inline-block;width:2ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
+              <span class="report-summary-percent"><span class="report-skeleton-line" style="display:inline-block;width:4ch;height:1em;margin:0;vertical-align:middle;"></span></span>
+            </div>
+            <div class="report-summary-item summary-tosca" aria-hidden="true">
+              <span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid fa-image"></i></span><span>Menunggu Review Hasil</span></span>
+              <strong class="report-summary-count"><span class="report-skeleton-line" style="display:inline-block;width:2ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
+              <span class="report-summary-percent"><span class="report-skeleton-line" style="display:inline-block;width:4ch;height:1em;margin:0;vertical-align:middle;"></span></span>
+            </div>
+            <div class="report-summary-item summary-green" aria-hidden="true">
+              <span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid fa-circle-check"></i></span><span>Selesai</span></span>
+              <strong class="report-summary-count"><span class="report-skeleton-line" style="display:inline-block;width:2ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
+              <span class="report-summary-percent"><span class="report-skeleton-line" style="display:inline-block;width:4ch;height:1em;margin:0;vertical-align:middle;"></span></span>
+            </div>
+            <div class="report-summary-item summary-red" aria-hidden="true">
+              <span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid fa-circle-xmark"></i></span><span>Ditolak</span></span>
+              <strong class="report-summary-count"><span class="report-skeleton-line" style="display:inline-block;width:2ch;height:1em;margin:0;vertical-align:middle;"></span></strong>
+              <span class="report-summary-percent"><span class="report-skeleton-line" style="display:inline-block;width:4ch;height:1em;margin:0;vertical-align:middle;"></span></span>
+            </div>
           </div>
           <div class="report-summary-error hidden" id="ringkasanError">
             <p id="ringkasanErrorMessage">Gagal memuat ringkasan laporan.</p>

@@ -34,7 +34,7 @@
 
   function renderMetrik() {
     const h = hitung();
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const set = (id, v) => A.animateCountUp(document.getElementById(id), v);
     set('metric-baru', h.baru);
     set('metric-proses', h.proses);
     set('metric-selesai', h.selesai);
