@@ -134,17 +134,17 @@
         <section class="glass-card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">Filter Laporan & Statistik</h2>
-              <p class="card-subtitle">Pilih kategori, rentang tanggal, ruangan, atau status laporan.</p>
+              <h2 class="card-title">Filter Laporan</h2>
+              <p class="card-subtitle">Pilih periode dan kriteria laporan yang ingin ditampilkan.</p>
             </div>
           </div>
+          <div class="filter-pills" role="group" aria-label="Pilih rentang tanggal">
+            <button type="button" class="filter-pill" data-stat-preset="7">7 hari</button>
+            <button type="button" class="filter-pill" data-stat-preset="30">30 hari</button>
+            <button type="button" class="filter-pill" data-stat-preset="month">Bulan ini</button>
+            <button type="button" class="filter-pill" data-stat-preset="all">Semua</button>
+          </div>
           <div class="report-filter-grid">
-            <label class="filter-field">
-              <span class="form-label">Kategori</span>
-              <select id="statFilterCategory" class="glass-input">
-                <option value="">Semua kategori</option>
-              </select>
-            </label>
             <label class="filter-field">
               <span class="form-label">Dari tanggal</span>
               <input type="date" id="statFilterFrom" class="glass-input" />
@@ -152,6 +152,12 @@
             <label class="filter-field">
               <span class="form-label">Sampai tanggal</span>
               <input type="date" id="statFilterTo" class="glass-input" />
+            </label>
+            <label class="filter-field">
+              <span class="form-label">Kategori</span>
+              <select id="statFilterCategory" class="glass-input">
+                <option value="">Semua kategori</option>
+              </select>
             </label>
             <label class="filter-field">
               <span class="form-label">Ruangan</span>
@@ -165,30 +171,33 @@
                 <option value="">Semua status</option>
               </select>
             </label>
-            <button type="button" class="btn btn-ghost filter-reset" id="statFilterReset">Reset Filter</button>
+            <div class="filter-actions">
+              <button type="button" class="btn stat-filter-apply" id="statFilterApply">Terapkan</button>
+              <button type="button" class="btn btn-ghost" id="statFilterReset">Reset</button>
+            </div>
           </div>
+          <p class="filter-result filter-error hidden" id="statFilterError" role="alert"></p>
           <p class="filter-result" id="statFilterResult" aria-live="polite"></p>
         </section>
 
-        <!-- Tren dan distribusi kategori dalam satu kartu -->
         <section class="glass-card chart-card combined-chart-card">
           <div class="card-header">
             <div>
-              <h2 class="card-title">Tren & Kategori Laporan</h2>
-              <p class="card-subtitle">Tren 7 hari terakhir dan distribusi jenis fasilitas yang dilaporkan.</p>
+              <h2 class="card-title">Grafik Laporan</h2>
+              <p class="card-subtitle">Jumlah laporan dan jenis fasilitas yang dilaporkan sesuai filter yang dipilih.</p>
             </div>
           </div>
           <div class="chart-panels">
             <div class="chart-panel">
-              <h3 class="chart-panel-title">Tren Laporan 7 Hari Terakhir</h3>
-              <p class="card-subtitle">Frekuensi pengaduan per hari</p>
+              <h3 class="chart-panel-title">Jumlah Laporan per Periode</h3>
+              <p class="card-subtitle" id="statChartTrendSubtitle"></p>
               <div class="chart-canvas-wrap">
                 <canvas id="trenChart"></canvas>
               </div>
             </div>
             <div class="chart-panel">
               <h3 class="chart-panel-title">Laporan Berdasarkan Kategori</h3>
-              <p class="card-subtitle">Distribusi jenis fasilitas yang rusak</p>
+              <p class="card-subtitle">Distribusi jenis fasilitas pada periode terpilih</p>
               <div class="chart-canvas-wrap">
                 <canvas id="kategoriChart"></canvas>
               </div>
