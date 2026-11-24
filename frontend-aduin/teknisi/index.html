@@ -102,11 +102,24 @@
         <button type="button" class="modal-close" onclick="tutupDetail()">✕</button>
       </div>
       
-      <div class="modal-body" style="font-size: 13px;">
+            <div class="modal-body" style="font-size: 13px;">
         <p><strong>Lokasi:</strong> <span id="detailLokasi">-</span></p>
         <p><strong>Pelapor:</strong> <span id="detailPelapor">-</span></p>
         <p><strong>Status:</strong> <span id="detailStatus">-</span></p>
         <p><strong>Tanggal:</strong> <span id="detailTanggal">-</span></p>
+
+        <!-- TAMBAHKAN BAGIAN FOTO INI -->
+        <div style="margin-top: 16px;">
+          <span class="detail-section-label">Foto Sebelum (dari Pelapor)</span>
+          <div id="detailFotoSebelum" class="detail-photo-grid"></div>
+        </div>
+
+        <div style="margin-top: 16px; margin-bottom: 16px;">
+          <span class="detail-section-label">Foto Hasil Pengerjaan (Teknisi)</span>
+          <div id="detailFotoSesudah" class="detail-photo-grid"></div>
+        </div>
+        <!-- BATAS TAMBAHAN FOTO -->
+
         <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 8px;">
           <strong>Catatan Teknisi:</strong><br>
           <span id="detailDeskripsi">-</span>

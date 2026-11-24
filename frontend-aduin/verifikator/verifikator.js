@@ -343,7 +343,18 @@
     }
 
     function ikatPill() {
+        const statusDariUrl = new URLSearchParams(window.location.search).get('status');
+        const mapStatusUrl = {
+            menunggu_verifikasi: 'Menunggu Verifikasi',
+            diteruskan_ke_pusat: 'Diteruskan ke Pusat',
+            dalam_perbaikan: 'Dalam Perbaikan',
+            menunggu_review_hasil: 'Menunggu Review Hasil',
+            selesai: 'Selesai',
+            ditolak: 'Ditolak',
+        };
+        if (statusDariUrl && mapStatusUrl[statusDariUrl]) filterPill = mapStatusUrl[statusDariUrl];
         document.querySelectorAll('.filter-pill').forEach((p) => p.addEventListener('click', () => { filterPill = p.dataset.filter; terapkanPill(); }));
+        terapkanPill();
     }
 
     async function muatUlangRiwayat() {
@@ -655,6 +666,59 @@
         terapkan();
     }
 
+    async function muatRingkasanLaporan() {
+        const grid = $('ringkasanGrid');
+        const errorBox = $('ringkasanError');
+        const errorMessage = $('ringkasanErrorMessage');
+        if (!grid) return;
+
+        grid.innerHTML = '<p class="report-summary-loading">Memuat ringkasan laporan...</p>';
+        grid.classList.remove('hidden');
+        if (errorBox) errorBox.classList.add('hidden');
+        setText('ringkasanTotal', '-');
+
+        try {
+            const url = A.API.base + '/api/statistik/ringkasan.php?id_verifikator=' + encodeURIComponent(sesi.id_user);
+            const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+            const json = await response.json();
+            if (!response.ok || !json.ok) throw new Error(json.message || 'Gagal memuat ringkasan laporan.');
+
+            const data = json.data;
+            const total = Number(data.total) || 0;
+            setText('ringkasanTotal', total);
+
+            const kartu = [
+                { key: 'menunggu_verifikasi', label: 'Menunggu Verifikasi', status: 'menunggu_verifikasi', icon: 'fa-hourglass-half', theme: 'summary-yellow' },
+                { key: 'diteruskan_ke_pusat', label: 'Diteruskan ke Pusat', status: 'diteruskan_ke_pusat', icon: 'fa-building', theme: 'summary-purple' },
+                { key: 'dalam_perbaikan', label: 'Dalam Perbaikan', status: 'dalam_perbaikan', icon: 'fa-screwdriver-wrench', theme: 'summary-blue' },
+                { key: 'menunggu_review_hasil', label: 'Menunggu Review Hasil', status: 'menunggu_review_hasil', icon: 'fa-image', theme: 'summary-tosca' },
+                { key: 'selesai', label: 'Selesai', status: 'selesai', icon: 'fa-circle-check', theme: 'summary-green' },
+                { key: 'ditolak', label: 'Ditolak', status: 'ditolak', icon: 'fa-circle-xmark', theme: 'summary-red' },
+            ];
+
+            grid.innerHTML = kartu.map((item) => {
+                const jumlah = Number(data[item.key]) || 0;
+                const persen = total === 0 ? 0 : Math.round((jumlah / total) * 100);
+                return '<button type="button" class="report-summary-item ' + item.theme + '" data-status="' + item.status + '" aria-label="' + esc(item.label) + ': ' + jumlah + ' laporan">' +
+                    '<span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid ' + item.icon + '" aria-hidden="true"></i></span><span>' + esc(item.label) + '</span></span>' +
+                    '<strong class="report-summary-count">' + jumlah + '</strong>' +
+                    '<span class="report-summary-percent">' + persen + '% dari total</span>' +
+                    '</button>';
+            }).join('');
+
+            grid.querySelectorAll('[data-status]').forEach((item) => {
+                item.addEventListener('click', () => {
+                    window.location.href = 'riwayat.html?status=' + encodeURIComponent(item.dataset.status);
+                });
+            });
+        } catch (err) {
+            grid.classList.add('hidden');
+            setText('ringkasanTotal', '-');
+            if (errorMessage) errorMessage.textContent = err.message || 'Gagal memuat ringkasan laporan.';
+            if (errorBox) errorBox.classList.remove('hidden');
+        }
+    }
+
     function gambarGrafik(labelTren, dataTren, labelKat, dataKat) {
         if (typeof Chart === 'undefined') return;
         const tren = $('trenChart'), kat = $('kategoriChart');
@@ -800,6 +864,8 @@
             if ($('rankingTableBody')) {
                 await muatLaporan();
                 renderStatistik();
+                $('ringkasanRetry')?.addEventListener('click', muatRingkasanLaporan);
+                await muatRingkasanLaporan();
             }
         } catch (err) {
             A.showToast(err.message, 'error');
