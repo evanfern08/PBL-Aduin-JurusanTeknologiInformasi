@@ -1099,6 +1099,18 @@ select.glass-input { cursor: pointer; }
   font-weight: 600;
 }
 
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-actions .btn { min-height: 44px; }
+.stat-filter-apply { background: var(--blue-dark); color: var(--white); }
+.stat-filter-apply:hover { background: var(--navy-light); }
+.filter-error { color: var(--red); }
+
 .page-actions {
   display: flex;
   align-items: center;

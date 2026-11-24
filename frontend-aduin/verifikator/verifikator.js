@@ -628,16 +628,157 @@
     }
     function rata(daftar) { return daftar.length ? daftar.reduce((a, b) => a + b, 0) / daftar.length : null; }
 
+    const HARI_SINGKAT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const BULAN_SINGKAT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const WARNA_KATEGORI = ['#30affe', '#226cc6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316'];
+    let chartTren = null;
+    let chartKategori = null;
+
+    function tanggalHariIni() {
+        const bagian = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(new Date());
+        const nilai = {};
+        bagian.forEach((item) => { nilai[item.type] = item.value; });
+        return nilai.year + '-' + nilai.month + '-' + nilai.day;
+    }
+
+    function tanggalUtc(iso) {
+        const bagian = iso.split('-').map(Number);
+        return new Date(Date.UTC(bagian[0], bagian[1] - 1, bagian[2]));
+    }
+
+    function isoUtc(tanggal) {
+        return tanggal.getUTCFullYear() + '-' +
+            String(tanggal.getUTCMonth() + 1).padStart(2, '0') + '-' +
+            String(tanggal.getUTCDate()).padStart(2, '0');
+    }
+
+    function geserTanggal(iso, jumlahHari) {
+        const tanggal = tanggalUtc(iso);
+        tanggal.setUTCDate(tanggal.getUTCDate() + jumlahHari);
+        return isoUtc(tanggal);
+    }
+
+    function tanggalPalingAwalSampaiHariIni(hariIni) {
+        const tanggal = laporan.map((l) => A.tanggalIso(l.tanggal_lapor))
+            .filter((tgl) => tgl && tgl <= hariIni)
+            .sort();
+        return tanggal[0] || hariIni;
+    }
+
+    function rentangPreset(preset, hariIni) {
+        if (preset === '7') return { dari: geserTanggal(hariIni, -6), sampai: hariIni };
+        if (preset === '30') return { dari: geserTanggal(hariIni, -29), sampai: hariIni };
+        if (preset === 'all') return { dari: tanggalPalingAwalSampaiHariIni(hariIni), sampai: hariIni };
+        return { dari: hariIni.slice(0, 7) + '-01', sampai: hariIni };
+    }
+
+    function hitungRentangGrafik(dari, sampai, data) {
+        const jumlahHari = Math.round((tanggalUtc(sampai) - tanggalUtc(dari)) / 86400000) + 1;
+        const tanggalLaporan = data.map((l) => A.tanggalIso(l.tanggal_lapor)).filter(Boolean);
+        let label = [];
+        let nilai = [];
+        let satuan;
+        let jumlahRentang;
+
+        if (jumlahHari <= 7) {
+            satuan = 'hari';
+            jumlahRentang = jumlahHari;
+            for (let i = 0; i < jumlahHari; i++) {
+                const tanggal = geserTanggal(dari, i);
+                label.push(HARI_SINGKAT[tanggalUtc(tanggal).getUTCDay()]);
+                nilai.push(tanggalLaporan.filter((item) => item === tanggal).length);
+            }
+        } else if (jumlahHari <= 14) {
+            satuan = 'hari';
+            jumlahRentang = jumlahHari;
+            for (let i = 0; i < jumlahHari; i++) {
+                const tanggal = geserTanggal(dari, i);
+                label.push('Hari ' + (i + 1));
+                nilai.push(tanggalLaporan.filter((item) => item === tanggal).length);
+            }
+        } else if (jumlahHari <= 90) {
+            satuan = 'minggu';
+            jumlahRentang = jumlahHari;
+            for (let mulai = 0; mulai < jumlahHari; mulai += 7) {
+                const akhir = Math.min(mulai + 7, jumlahHari);
+                label.push('Minggu ' + (label.length + 1));
+                nilai.push(tanggalLaporan.filter((item) => {
+                    const selisih = Math.round((tanggalUtc(item) - tanggalUtc(dari)) / 86400000);
+                    return selisih >= mulai && selisih < akhir;
+                }).length);
+            }
+        } else {
+            satuan = 'bulan';
+            const awal = tanggalUtc(dari);
+            const akhir = tanggalUtc(sampai);
+            jumlahRentang = (akhir.getUTCFullYear() - awal.getUTCFullYear()) * 12 +
+                akhir.getUTCMonth() - awal.getUTCMonth() + 1;
+            for (let i = 0; i < jumlahRentang; i++) {
+                const tanggal = new Date(Date.UTC(awal.getUTCFullYear(), awal.getUTCMonth() + i, 1));
+                const bulan = String(tanggal.getUTCMonth() + 1).padStart(2, '0');
+                const kunci = tanggal.getUTCFullYear() + '-' + bulan;
+                label.push(BULAN_SINGKAT[tanggal.getUTCMonth()]);
+                nilai.push(tanggalLaporan.filter((item) => item.slice(0, 7) === kunci).length);
+            }
+        }
+
+        return { label: label, nilai: nilai, satuan: satuan, jumlahRentang: jumlahRentang };
+    }
+
     function renderStatistik() {
         const tbody = $('rankingTableBody');
         if (!tbody) return;
         isiFilter('stat');
+        const dariInput = $('statFilterFrom');
+        const sampaiInput = $('statFilterTo');
+        const hariIni = tanggalHariIni();
+        const bulanIni = rentangPreset('month', hariIni);
+        dariInput.value = bulanIni.dari;
+        sampaiInput.value = bulanIni.sampai;
+
+        const error = $('statFilterError');
+        const tombolPreset = [...document.querySelectorAll('[data-stat-preset]')];
+        const perbaruiPresetAktif = () => {
+            const hariSekarang = tanggalHariIni();
+            tombolPreset.forEach((tombol) => {
+                const preset = rentangPreset(tombol.dataset.statPreset, hariSekarang);
+                const aktif = dariInput.value === preset.dari && sampaiInput.value === preset.sampai;
+                tombol.classList.toggle('active', aktif);
+                tombol.setAttribute('aria-pressed', aktif ? 'true' : 'false');
+            });
+        };
+        const tampilkanError = (pesan) => {
+            if (!error) return;
+            error.textContent = pesan;
+            error.classList.toggle('hidden', !pesan);
+        };
+
         const terapkan = () => {
-            const f = bacaFilter('stat');
+            const dari = dariInput.value;
+            const sampai = sampaiInput.value;
+            if (Boolean(dari) !== Boolean(sampai)) {
+                tampilkanError('Isi kedua tanggal, atau kosongkan keduanya untuk menampilkan semua laporan.');
+                return;
+            }
+            if (dari && sampai < dari) {
+                tampilkanError('Tanggal akhir harus sama dengan atau setelah tanggal awal.');
+                return;
+            }
+
+            tampilkanError('');
+            perbaruiPresetAktif();
+            const rentang = dari ? { dari: dari, sampai: sampai } : rentangPreset('all', tanggalHariIni());
+            const f = Object.assign(bacaFilter('stat'), rentang);
             const data = laporan.filter((l) => lolosFilter(l, f));
-            const filtered = Object.values(f).some(Boolean);
+            const grafik = hitungRentangGrafik(rentang.dari, rentang.sampai, data);
+
             setText('statTotal', data.length + ' Tiket');
-            const selesai = data.filter((l) => l.status === 'Selesai').length;
+            const selesai = data.filter((l) => l.status_ui === 'Selesai' || l.status === 'Selesai').length;
             setText('statResolusi', data.length ? ((selesai / data.length) * 100).toFixed(1) + '%' : '0%');
             const durasiKerja = data.filter((l) => l.waktu_mulai && l.waktu_selesai)
                 .map((l) => A.parseTanggal(l.waktu_selesai) - A.parseTanggal(l.waktu_mulai));
@@ -645,98 +786,136 @@
                 .map((l) => A.parseTanggal(l.tanggal_verifikasi) - A.parseTanggal(l.tanggal_lapor));
             setText('statRata', formatDurasi(rata(durasiKerja)));
             setText('statRespon', formatDurasi(rata(durasiRespon)));
+
             const hasil = $('statFilterResult');
-            if (hasil) hasil.textContent = filtered ? 'Statistik menampilkan ' + data.length + ' dari ' + laporan.length + ' laporan.' : 'Menampilkan ringkasan seluruh ' + laporan.length + ' laporan.';
+            if (hasil) hasil.textContent = data.length ? 'Menampilkan ringkasan ' + data.length + ' laporan' : 'Tidak ada laporan pada periode ini';
+            renderRingkasanLaporan(data);
+
             const perRuang = new Map();
             data.forEach((l) => perRuang.set(l.nama_ruangan, (perRuang.get(l.nama_ruangan) || 0) + 1));
             const ranking = [...perRuang.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
             tbody.innerHTML = ranking.length ? ranking.map(([lokasi, n], i) =>
                 '<tr><td><strong>#' + (i + 1) + '</strong></td><td>' + esc(lokasi) + '</td><td style="text-align:right;padding-right:24px;">' + n + ' Laporan</td></tr>').join('')
                 : '<tr><td colspan="3" class="text-muted" style="padding:16px;">Tidak ada data.</td></tr>';
-            const tanggalAda = data.map((l) => A.parseTanggal(l.tanggal_lapor)).filter(Boolean);
-            const akhir = tanggalAda.length ? new Date(Math.max.apply(null, tanggalAda)) : new Date();
-            const hariList = Array.from({ length: 7 }, (_, i) => { const d = new Date(akhir); d.setDate(d.getDate() - (6 - i)); return d; });
-            const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            const tren = hariList.map((d) => data.filter((l) => A.tanggalIso(l.tanggal_lapor) === iso(d)).length);
-            const kat = new Map();
-            data.forEach((l) => kat.set(l.nama_kategori, (kat.get(l.nama_kategori) || 0) + 1));
-            gambarGrafik(hariList.map((d) => d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })), tren, [...kat.keys()], [...kat.values()]);
+
+            const rentangLabel = grafik.satuan === 'bulan' ? 'bulan' : 'hari';
+            setText('statChartTrendSubtitle', 'Frekuensi laporan per ' + grafik.satuan + ' · ' + grafik.jumlahRentang + ' ' + rentangLabel + ' terpilih');
+            const kategori = new Map();
+            data.forEach((l) => kategori.set(l.nama_kategori, (kategori.get(l.nama_kategori) || 0) + 1));
+            const kategoriTerisi = [...kategori.entries()].filter(([, jumlah]) => jumlah > 0);
+            gambarGrafik(grafik.label, grafik.nilai, kategoriTerisi.map(([nama]) => nama), kategoriTerisi.map(([, jumlah]) => jumlah));
         };
-        ikatFilter('stat', terapkan);
+
+        const reset = () => {
+            const rentang = rentangPreset('month', tanggalHariIni());
+            dariInput.value = rentang.dari;
+            sampaiInput.value = rentang.sampai;
+            ['Category', 'Room', 'Status'].forEach((field) => {
+                const input = $('statFilter' + field);
+                if (input) input.value = '';
+            });
+            terapkan();
+        };
+
+        tombolPreset.forEach((tombol) => tombol.addEventListener('click', () => {
+            const rentang = rentangPreset(tombol.dataset.statPreset, tanggalHariIni());
+            dariInput.value = rentang.dari;
+            sampaiInput.value = rentang.sampai;
+            terapkan();
+        }));
+        [dariInput, sampaiInput].forEach((input) => input.addEventListener('input', () => {
+            tampilkanError('');
+            perbaruiPresetAktif();
+        }));
+        $('statFilterApply').addEventListener('click', terapkan);
+        $('statFilterReset').addEventListener('click', reset);
+        ['Category', 'Room', 'Status'].forEach((field) => {
+            const input = $('statFilter' + field);
+            if (input) input.addEventListener('change', terapkan);
+        });
+        perbaruiPresetAktif();
         terapkan();
     }
 
-    async function muatRingkasanLaporan() {
+    function renderRingkasanLaporan(data) {
         const grid = $('ringkasanGrid');
-        const errorBox = $('ringkasanError');
-        const errorMessage = $('ringkasanErrorMessage');
         if (!grid) return;
-
-        grid.innerHTML = '<p class="report-summary-loading">Memuat ringkasan laporan...</p>';
+        const kartu = [
+            { label: 'Menunggu Verifikasi', status: 'menunggu_verifikasi', icon: 'fa-hourglass-half', theme: 'summary-yellow', matches: ['Menunggu Verifikasi'] },
+            { label: 'Diteruskan ke Pusat', status: 'diteruskan_ke_pusat', icon: 'fa-building', theme: 'summary-purple', matches: ['Diteruskan ke Pusat'] },
+            { label: 'Dalam Perbaikan', status: 'dalam_perbaikan', icon: 'fa-screwdriver-wrench', theme: 'summary-blue', matches: ['Dalam Perbaikan', 'Diproses'] },
+            { label: 'Menunggu Review Hasil', status: 'menunggu_review_hasil', icon: 'fa-image', theme: 'summary-tosca', matches: ['Menunggu Review Hasil'] },
+            { label: 'Selesai', status: 'selesai', icon: 'fa-circle-check', theme: 'summary-green', matches: ['Selesai'] },
+            { label: 'Ditolak', status: 'ditolak', icon: 'fa-circle-xmark', theme: 'summary-red', matches: ['Ditolak'] },
+        ];
+        setText('ringkasanTotal', data.length);
         grid.classList.remove('hidden');
+        const errorBox = $('ringkasanError');
         if (errorBox) errorBox.classList.add('hidden');
-        setText('ringkasanTotal', '-');
-
-        try {
-            const url = A.API.base + '/api/statistik/ringkasan.php?id_verifikator=' + encodeURIComponent(sesi.id_user);
-            const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
-            const json = await response.json();
-            if (!response.ok || !json.ok) throw new Error(json.message || 'Gagal memuat ringkasan laporan.');
-
-            const data = json.data;
-            const total = Number(data.total) || 0;
-            setText('ringkasanTotal', total);
-
-            const kartu = [
-                { key: 'menunggu_verifikasi', label: 'Menunggu Verifikasi', status: 'menunggu_verifikasi', icon: 'fa-hourglass-half', theme: 'summary-yellow' },
-                { key: 'diteruskan_ke_pusat', label: 'Diteruskan ke Pusat', status: 'diteruskan_ke_pusat', icon: 'fa-building', theme: 'summary-purple' },
-                { key: 'dalam_perbaikan', label: 'Dalam Perbaikan', status: 'dalam_perbaikan', icon: 'fa-screwdriver-wrench', theme: 'summary-blue' },
-                { key: 'menunggu_review_hasil', label: 'Menunggu Review Hasil', status: 'menunggu_review_hasil', icon: 'fa-image', theme: 'summary-tosca' },
-                { key: 'selesai', label: 'Selesai', status: 'selesai', icon: 'fa-circle-check', theme: 'summary-green' },
-                { key: 'ditolak', label: 'Ditolak', status: 'ditolak', icon: 'fa-circle-xmark', theme: 'summary-red' },
-            ];
-
-            grid.innerHTML = kartu.map((item) => {
-                const jumlah = Number(data[item.key]) || 0;
-                const persen = total === 0 ? 0 : Math.round((jumlah / total) * 100);
-                return '<button type="button" class="report-summary-item ' + item.theme + '" data-status="' + item.status + '" aria-label="' + esc(item.label) + ': ' + jumlah + ' laporan">' +
-                    '<span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid ' + item.icon + '" aria-hidden="true"></i></span><span>' + esc(item.label) + '</span></span>' +
-                    '<strong class="report-summary-count">' + jumlah + '</strong>' +
-                    '<span class="report-summary-percent">' + persen + '% dari total</span>' +
-                    '</button>';
-            }).join('');
-
-            grid.querySelectorAll('[data-status]').forEach((item) => {
-                item.addEventListener('click', () => {
-                    window.location.href = 'riwayat.html?status=' + encodeURIComponent(item.dataset.status);
-                });
+        grid.innerHTML = kartu.map((item) => {
+            const jumlah = data.filter((l) => item.matches.includes(l.status_ui || l.status)).length;
+            const persen = data.length ? Math.round((jumlah / data.length) * 100) : 0;
+            return '<button type="button" class="report-summary-item ' + item.theme + '" data-status="' + item.status + '" aria-label="' + esc(item.label) + ': ' + jumlah + ' laporan">' +
+                '<span class="report-summary-item-head"><span class="report-summary-icon"><i class="fa-solid ' + item.icon + '" aria-hidden="true"></i></span><span>' + esc(item.label) + '</span></span>' +
+                '<strong class="report-summary-count">' + jumlah + '</strong>' +
+                '<span class="report-summary-percent">' + persen + '% dari total</span>' +
+                '</button>';
+        }).join('');
+        grid.querySelectorAll('[data-status]').forEach((item) => {
+            item.addEventListener('click', () => {
+                window.location.href = 'riwayat.html?status=' + encodeURIComponent(item.dataset.status);
             });
-        } catch (err) {
-            grid.classList.add('hidden');
-            setText('ringkasanTotal', '-');
-            if (errorMessage) errorMessage.textContent = err.message || 'Gagal memuat ringkasan laporan.';
-            if (errorBox) errorBox.classList.remove('hidden');
-        }
+        });
     }
 
     function gambarGrafik(labelTren, dataTren, labelKat, dataKat) {
         if (typeof Chart === 'undefined') return;
         const tren = $('trenChart'), kat = $('kategoriChart');
         if (tren) {
-            const lama = Chart.getChart(tren); if (lama) lama.destroy();
-            new Chart(tren, {
-                type: 'line',
-                data: { labels: labelTren, datasets: [{ label: 'Jumlah Laporan', data: dataTren, borderColor: '#226cc6', backgroundColor: 'rgba(48,175,254,0.15)', fill: true, tension: 0.4, pointBackgroundColor: '#fff', pointBorderColor: '#30affe', pointBorderWidth: 3, pointRadius: 5 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } },
-            });
+            if (!chartTren) {
+                chartTren = new Chart(tren, {
+                    type: 'line',
+                    data: { labels: [], datasets: [{ label: 'Jumlah Laporan', data: [], borderColor: '#226cc6', backgroundColor: 'rgba(48,175,254,0.15)', fill: true, tension: 0, pointBackgroundColor: '#fff', pointBorderColor: '#30affe', pointBorderWidth: 3, pointRadius: 5 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 }, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { autoSkip: false } } } },
+                });
+            }
+            chartTren.data.labels = labelTren;
+            chartTren.data.datasets[0].data = dataTren;
+            chartTren.update();
         }
         if (kat) {
-            const lama = Chart.getChart(kat); if (lama) lama.destroy();
-            new Chart(kat, {
-                type: 'doughnut',
-                data: { labels: labelKat, datasets: [{ data: dataKat, backgroundColor: ['#30affe', '#226cc6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }, cutout: '65%' },
-            });
+            if (!chartKategori) {
+                chartKategori = new Chart(kat, {
+                    type: 'doughnut',
+                    data: { labels: [], datasets: [{ data: [], backgroundColor: WARNA_KATEGORI, borderWidth: 0 }] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: { size: 11 },
+                                    generateLabels: (chart) => {
+                                        const total = chart.data.datasets[0].data.reduce((jumlah, nilai) => jumlah + nilai, 0);
+                                        return Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart)
+                                            .filter((item) => chart.data.datasets[0].data[item.index] > 0)
+                                            .map((item) => {
+                                                const persen = total ? Math.round((chart.data.datasets[0].data[item.index] / total) * 100) : 0;
+                                                return Object.assign({}, item, { text: item.text + ' ' + persen + '%' });
+                                            });
+                                    },
+                                },
+                            },
+                        },
+                        cutout: '65%',
+                    },
+                });
+            }
+            chartKategori.data.labels = labelKat;
+            chartKategori.data.datasets[0].data = dataKat;
+            chartKategori.update();
         }
     }
 
@@ -864,8 +1043,6 @@
             if ($('rankingTableBody')) {
                 await muatLaporan();
                 renderStatistik();
-                $('ringkasanRetry')?.addEventListener('click', muatRingkasanLaporan);
-                await muatRingkasanLaporan();
             }
         } catch (err) {
             A.showToast(err.message, 'error');
