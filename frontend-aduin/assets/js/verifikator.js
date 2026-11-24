@@ -486,7 +486,7 @@
 
   function renderPaginationRiwayat() {
     const pagination = $('reportPagination');
-    if (!metaRiwayat || metaRiwayat.total === 0) {
+    if (!metaRiwayat) {
       pagination.classList.add('hidden');
       return;
     }
@@ -551,7 +551,7 @@
       page: stateRiwayat.page,
     };
     try {
-      const response = await API.get('laporan/daftar.php', params);
+      const response = await API.get('api/laporan/daftar.php', params);
       if (nomorPermintaan !== nomorPermintaanRiwayat) return;
       if (!response || !Array.isArray(response.data) || !response.meta) {
         throw new Error('Respons daftar laporan tidak valid.');
@@ -569,6 +569,7 @@
       renderRiwayat();
     } catch (err) {
       if (nomorPermintaan !== nomorPermintaanRiwayat) return;
+      console.error('[Daftar Laporan] Gagal memuat data:', err);
       buatStateRiwayat('Gagal memuat laporan: ' + (err.message || 'Terjadi kesalahan.'), {
         id: 'btnRetryRiwayat',
         label: 'Coba lagi',

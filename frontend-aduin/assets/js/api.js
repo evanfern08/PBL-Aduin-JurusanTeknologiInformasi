@@ -59,7 +59,7 @@ const API_BASE = 'https://pbl-aduin-jurusanteknologiinformasi-eta.vercel.app';
       if (qs) url += '?' + qs;
     }
 
-    const opts = { method: method, headers: {} };
+    const opts = { method: method, headers: {}, credentials: 'same-origin' };
     if (data instanceof FormData) {
       opts.body = data;
     } else if (data !== undefined && data !== null) {
