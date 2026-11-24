@@ -24,7 +24,7 @@
   function progresLaporan(r) {
     const status = A.statusUntukPelapor(r.status_ui);
     const kembali = status === 'Dikembalikan ke Pelapor';
-    const aktif = status === 'Menunggu Verifikasi' ? 0 : status === 'Selesai' ? 3 : 1;
+    const aktif = status === 'Menunggu Verifikasi' ? 0 : status === 'Selesai' ? 3 : 2;
 
     const langkah = [
       { label: 'Dikirim', sub: A.tanggalPendek(r.tanggal_lapor) },
