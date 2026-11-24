@@ -364,26 +364,33 @@ function cek_password(string $input, string $tersimpan): bool {
 
 /*
  * Pemetaan status database -> status tampilan (UI):
- *   pengaduan.status = 'Diproses'  + tugas belum selesai  -> 'Dalam Perbaikan'
- *   pengaduan.status = 'Diproses'  + tugas sudah selesai  -> 'Menunggu Review Hasil'
- *   status lain dipakai apa adanya.
+ *   pengaduan.status = 'Diproses' + tugas belum selesai -> 'Dalam Perbaikan'
+ *   pengaduan.status = 'Diproses' + tugas selesai       -> 'Menunggu Review Hasil'
+ *   Status lama "Perlu Perbaikan Ulang"/"Menunggu Validasi" dinormalisasi ke
+ *   label yang sama agar cocok dengan kategori tab dan ringkasan.
  *
  * Status tugas teknisi (penanganan_tugas):
  *   waktu_selesai terisi -> 'Selesai'
  *   waktu_mulai terisi   -> 'Sedang Dikerjakan'
  *   selain itu           -> 'Tugas Baru'
  */
+function sql_status_ui_case(): string {
+    return "CASE
+                WHEN p.status = 'Diproses' AND pt.waktu_selesai IS NOT NULL THEN 'Menunggu Review Hasil'
+                WHEN p.status = 'Diproses' THEN 'Dalam Perbaikan'
+                WHEN lower(replace(p.status, ' ', '_')) IN ('menunggu_validasi', 'menunggu_review_hasil') THEN 'Menunggu Review Hasil'
+                WHEN lower(replace(p.status, ' ', '_')) IN ('perlu_perbaikan_ulang', 'dalam_perbaikan') THEN 'Dalam Perbaikan'
+                ELSE p.status
+            END";
+}
+
 function sql_pengaduan_select(): string {
     return "SELECT p.id_pengaduan, p.id_pelapor, p.id_ruangan, p.id_fasilitas,
                    p.id_fasilitas AS id_kategori,
                    p.judul_laporan, p.judul_laporan AS judul_keluhan,
                    p.deskripsi, p.foto_bukti, p.status, p.alasan_penolakan,
                    p.tanggal_lapor, p.id_verifikator,
-                   CASE
-                       WHEN p.status = 'Diproses' AND pt.waktu_selesai IS NOT NULL THEN 'Menunggu Review Hasil'
-                       WHEN p.status = 'Diproses' THEN 'Dalam Perbaikan'
-                       ELSE p.status
-                   END AS status_ui,
+                   " . sql_status_ui_case() . " AS status_ui,
                    r.nama_ruangan, r.lantai,
                    k.nama_kategori,
                    u.nama AS nama_pelapor, u.email AS email_pelapor, u.role AS role_pelapor,

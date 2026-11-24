@@ -299,31 +299,381 @@
     return card;
   }
 
-  let filterPill = 'Semua';
+  const STATUS_DAFTAR = [
+    'Semua',
+    'Menunggu Verifikasi',
+    'Diteruskan ke Pusat',
+    'Dalam Perbaikan',
+    'Menunggu Review Hasil',
+    'Selesai',
+    'Ditolak',
+  ];
+  const STATUS_URL_MAP = {
+    menunggu_verifikasi: 'Menunggu Verifikasi',
+    diteruskan_ke_pusat: 'Diteruskan ke Pusat',
+    dalam_perbaikan: 'Dalam Perbaikan',
+    menunggu_review_hasil: 'Menunggu Review Hasil',
+    selesai: 'Selesai',
+    ditolak: 'Ditolak',
+  };
+  let stateRiwayat = null;
+  let metaRiwayat = null;
+  let draftRentang = { dari: '', sampai: '' };
+  let nomorPermintaanRiwayat = 0;
+
+  function hariIniJakarta() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date());
+    const ambil = (jenis) => parts.find((part) => part.type === jenis).value;
+    return ambil('year') + '-' + ambil('month') + '-' + ambil('day');
+  }
+
+  function tambahHariIso(iso, jumlah) {
+    const tanggal = new Date(iso + 'T12:00:00Z');
+    tanggal.setUTCDate(tanggal.getUTCDate() + jumlah);
+    return tanggal.toISOString().slice(0, 10);
+  }
+
+  function rentangPreset(preset) {
+    const hariIni = hariIniJakarta();
+    if (preset === 'all') return { dari: '', sampai: '' };
+    if (preset === 'month') return { dari: hariIni.slice(0, 8) + '01', sampai: hariIni };
+    const jumlahHari = preset === '30' ? 30 : 7;
+    return { dari: tambahHariIso(hariIni, -jumlahHari), sampai: hariIni };
+  }
+
+  function bacaStateRiwayatUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const statusUrl = params.get('status') || '';
+    const status = STATUS_DAFTAR.includes(statusUrl) ? statusUrl : (STATUS_URL_MAP[statusUrl] || 'Semua');
+    const tanggalSemua = params.get('tanggal_semua') === '1';
+    const adaTanggal = Boolean(params.get('tanggal_dari') || params.get('tanggal_sampai'));
+    let rentang = { dari: '', sampai: '' };
+    if (tanggalSemua) {
+      rentang = rentangPreset('all');
+    } else if (adaTanggal) {
+      const defaultRentang = rentangPreset('7');
+      rentang = {
+        dari: params.get('tanggal_dari') || defaultRentang.dari,
+        sampai: params.get('tanggal_sampai') || defaultRentang.sampai,
+      };
+    } else if (!statusUrl || status === 'Semua') {
+      rentang = rentangPreset('7');
+    }
+
+    const perPage = Number(params.get('per_page'));
+    const page = Number(params.get('page'));
+    return {
+      status: status,
+      dari: rentang.dari,
+      sampai: rentang.sampai,
+      perPage: [10, 25, 50].includes(perPage) ? perPage : 10,
+      page: Number.isInteger(page) && page > 0 ? page : 1,
+    };
+  }
+
+  function simpanStateRiwayatUrl(push) {
+    const params = new URLSearchParams();
+    if (stateRiwayat.status !== 'Semua') params.set('status', stateRiwayat.status);
+    if (stateRiwayat.dari && stateRiwayat.sampai) {
+      params.set('tanggal_dari', stateRiwayat.dari);
+      params.set('tanggal_sampai', stateRiwayat.sampai);
+    } else {
+      params.set('tanggal_semua', '1');
+    }
+    params.set('per_page', String(stateRiwayat.perPage));
+    params.set('page', String(stateRiwayat.page));
+    const url = window.location.pathname + '?' + params.toString();
+    if (push) window.history.pushState(null, '', url);
+    else window.history.replaceState(null, '', url);
+  }
+
+  function tanggalTerformat(iso) {
+    const tanggal = new Date(iso + 'T12:00:00Z');
+    const part = {};
+    new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric',
+    }).formatToParts(tanggal).forEach((item) => { part[item.type] = item.value; });
+    return part;
+  }
+
+  function labelRentangTanggal(dari, sampai) {
+    const awal = tanggalTerformat(dari);
+    const akhir = tanggalTerformat(sampai);
+    const tahunAwal = awal.year === akhir.year ? '' : ' ' + awal.year;
+    return awal.day + ' ' + awal.month + tahunAwal + ' – ' + akhir.day + ' ' + akhir.month + ' ' + akhir.year;
+  }
+
+  function presetRentangAktif(rentang) {
+    if (!rentang.dari && !rentang.sampai) return 'all';
+    return ['7', '30', 'month'].find((preset) => {
+      const nilai = rentangPreset(preset);
+      return nilai.dari === rentang.dari && nilai.sampai === rentang.sampai;
+    }) || '';
+  }
+
+  function renderKontrolRentang() {
+    const inputDari = $('dateFilterFrom');
+    const inputSampai = $('dateFilterTo');
+    if (!inputDari || !inputSampai) return;
+    inputDari.value = draftRentang.dari;
+    inputSampai.value = draftRentang.sampai;
+    const preset = presetRentangAktif(draftRentang);
+    document.querySelectorAll('[data-date-preset]').forEach((button) => {
+      const active = button.dataset.datePreset === preset;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  function renderFilterRiwayat() {
+    document.querySelectorAll('.filter-pill').forEach((button) => {
+      const active = button.dataset.filter === stateRiwayat.status;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    const aktif = Boolean(stateRiwayat.dari && stateRiwayat.sampai) || stateRiwayat.status !== 'Semua';
+    $('dateFilterDot').classList.toggle('hidden', !aktif);
+    const row = $('activeDateFilter');
+    row.classList.toggle('hidden', !stateRiwayat.dari || !stateRiwayat.sampai);
+    if (stateRiwayat.dari && stateRiwayat.sampai) {
+      const preset = presetRentangAktif(stateRiwayat);
+      const presetLabel = preset === '7' ? '7 hari terakhir'
+        : preset === '30' ? '30 hari terakhir'
+          : preset === 'month' ? 'Bulan ini' : 'Rentang kustom';
+      $('activeDateFilterText').textContent = labelRentangTanggal(stateRiwayat.dari, stateRiwayat.sampai) + ' · ' + presetLabel;
+    }
+  }
+
+  function bukaPanelTanggal(buka) {
+    const panel = $('dateFilterPanel');
+    const tombol = $('btnDateFilter');
+    panel.classList.toggle('hidden', !buka);
+    tombol.classList.toggle('is-open', buka);
+    tombol.setAttribute('aria-expanded', String(buka));
+    if (buka) {
+      draftRentang = { dari: stateRiwayat.dari || '', sampai: stateRiwayat.sampai || '' };
+      renderKontrolRentang();
+      $('dateFilterError').classList.add('hidden');
+    }
+  }
+
+  function setRentangDraft(preset) {
+    draftRentang = rentangPreset(preset);
+    renderKontrolRentang();
+    $('dateFilterError').classList.add('hidden');
+  }
+
+  function tampilkanSkeletonRiwayat() {
+    const list = $('riwayatList');
+    list.setAttribute('aria-busy', 'true');
+    list.innerHTML = Array.from({ length: 3 }, () =>
+      '<div class="report-skeleton-card" aria-hidden="true"><div class="report-skeleton-line medium"></div>' +
+      '<div class="report-skeleton-line short"></div><div class="report-skeleton-line long"></div>' +
+      '<div class="report-skeleton-timeline"><span></span><span></span><span></span><span></span><span></span></div></div>'
+    ).join('');
+    $('reportPagination').classList.add('hidden');
+  }
+
+  function buatStateRiwayat(pesan, tombol) {
+    const list = $('riwayatList');
+    list.removeAttribute('aria-busy');
+    list.innerHTML = '<div class="report-state-card"><strong>' + esc(pesan) + '</strong>' +
+      (tombol ? '<button type="button" class="btn btn-ghost" id="' + tombol.id + '">' + esc(tombol.label) + '</button>' : '') + '</div>';
+    if (tombol && tombol.aksi) $(tombol.id).addEventListener('click', tombol.aksi);
+  }
+
+  function renderPaginationRiwayat() {
+    const pagination = $('reportPagination');
+    if (!metaRiwayat || metaRiwayat.total === 0) {
+      pagination.classList.add('hidden');
+      return;
+    }
+    pagination.classList.remove('hidden');
+    const total = Number(metaRiwayat.total);
+    const halaman = Number(metaRiwayat.page);
+    const perHalaman = Number(metaRiwayat.per_page);
+    const totalHalaman = Number(metaRiwayat.total_pages);
+    const mulai = total ? (halaman - 1) * perHalaman + 1 : 0;
+    const akhir = Math.min(halaman * perHalaman, total);
+    const rentangAwal = Math.max(1, Math.min(halaman - 2, totalHalaman - 4));
+    const rentangAkhir = Math.min(totalHalaman, rentangAwal + 4);
+    let tombolHalaman = '';
+    for (let nomor = rentangAwal; nomor <= rentangAkhir; nomor++) {
+      tombolHalaman += '<button type="button" class="report-page-button' + (nomor === halaman ? ' active' : '') +
+        '" data-page="' + nomor + '" aria-label="Halaman ' + nomor + '"' +
+        (nomor === halaman ? ' aria-current="page"' : '') + '>' + nomor + '</button>';
+    }
+    pagination.innerHTML =
+      '<div class="report-pagination-info"><span>Tampilkan</span><select id="reportPerPage" aria-label="Jumlah laporan per halaman">' +
+      [10, 25, 50].map((jumlah) => '<option value="' + jumlah + '"' + (jumlah === perHalaman ? ' selected' : '') + '>' + jumlah + '</option>').join('') +
+      '</select><span>per halaman · ' + mulai + '–' + akhir + ' dari ' + total + ' laporan</span></div>' +
+      '<div class="report-pagination-buttons"><button type="button" class="report-page-button" data-page="' + (halaman - 1) +
+      '" aria-label="Halaman sebelumnya"' + (halaman <= 1 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>' +
+      tombolHalaman + '<button type="button" class="report-page-button" data-page="' + (halaman + 1) +
+      '" aria-label="Halaman berikutnya"' + (halaman >= totalHalaman ? ' disabled' : '') + '><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button></div>';
+
+    $('reportPerPage').addEventListener('change', () => {
+      stateRiwayat.perPage = Number($('reportPerPage').value);
+      stateRiwayat.page = 1;
+      pindahHalamanRiwayat();
+    });
+    pagination.querySelectorAll('[data-page]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        stateRiwayat.page = Number(button.dataset.page);
+        pindahHalamanRiwayat(true);
+      });
+    });
+  }
+
+  async function pindahHalamanRiwayat(scrollKeDaftar) {
+    simpanStateRiwayatUrl(true);
+    await muatHalamanRiwayat();
+    if (scrollKeDaftar) {
+      const posisi = $('riwayatList').getBoundingClientRect().top + window.scrollY - 16;
+      window.scrollTo({ top: posisi, behavior: 'smooth' });
+    }
+  }
+
+  async function muatHalamanRiwayat() {
+    if (!stateRiwayat) return;
+    const nomorPermintaan = ++nomorPermintaanRiwayat;
+    tampilkanSkeletonRiwayat();
+    const params = {
+      id_verifikator: sesi.id_user,
+      status: stateRiwayat.status !== 'Semua' ? stateRiwayat.status : undefined,
+      tanggal_dari: stateRiwayat.dari || undefined,
+      tanggal_sampai: stateRiwayat.sampai || undefined,
+      tanggal_semua: !stateRiwayat.dari && !stateRiwayat.sampai ? 1 : undefined,
+      per_page: stateRiwayat.perPage,
+      page: stateRiwayat.page,
+    };
+    try {
+      const response = await API.get('laporan/daftar.php', params);
+      if (nomorPermintaan !== nomorPermintaanRiwayat) return;
+      if (!response || !Array.isArray(response.data) || !response.meta) {
+        throw new Error('Respons daftar laporan tidak valid.');
+      }
+      laporan = response.data;
+      metaRiwayat = response.meta;
+      stateRiwayat.page = Number(metaRiwayat.page) || 1;
+      stateRiwayat.perPage = Number(metaRiwayat.per_page) || 10;
+      if (metaRiwayat.tanggal_dari && metaRiwayat.tanggal_sampai) {
+        stateRiwayat.dari = metaRiwayat.tanggal_dari;
+        stateRiwayat.sampai = metaRiwayat.tanggal_sampai;
+      }
+      simpanStateRiwayatUrl(false);
+      renderFilterRiwayat();
+      renderRiwayat();
+    } catch (err) {
+      if (nomorPermintaan !== nomorPermintaanRiwayat) return;
+      buatStateRiwayat('Gagal memuat laporan: ' + (err.message || 'Terjadi kesalahan.'), {
+        id: 'btnRetryRiwayat',
+        label: 'Coba lagi',
+        aksi: muatHalamanRiwayat,
+      });
+      metaRiwayat = null;
+    }
+  }
+
   function renderRiwayat() {
     const list = $('riwayatList');
     if (!list) return;
     list.innerHTML = '';
-    if (!laporan.length) list.innerHTML = '<p class="glass-card text-muted">Belum ada laporan.</p>';
-    laporan.forEach((l) => list.appendChild(kartuRiwayat(l)));
-    terapkanPill();
+    list.removeAttribute('aria-busy');
+    if (!laporan.length) {
+      buatStateRiwayat('Tidak ada laporan pada rentang ini', {
+        id: 'btnViewAllReports',
+        label: 'Lihat semua laporan',
+        aksi: () => {
+          stateRiwayat.status = 'Semua';
+          stateRiwayat.dari = '';
+          stateRiwayat.sampai = '';
+          stateRiwayat.page = 1;
+          renderFilterRiwayat();
+          simpanStateRiwayatUrl(true);
+          muatHalamanRiwayat();
+        },
+      });
+    } else {
+      laporan.forEach((l) => list.appendChild(kartuRiwayat(l)));
+    }
+    renderPaginationRiwayat();
     renderReminder();
   }
 
-  function terapkanPill() {
-    document.querySelectorAll('.filter-pill').forEach((p) => p.classList.toggle('active', p.dataset.filter === filterPill));
-    document.querySelectorAll('.riwayat-card').forEach((c) => {
-      c.style.display = (filterPill === 'Semua' || c.dataset.status === filterPill) ? '' : 'none';
+  function ikatPill() {
+    document.querySelectorAll('.filter-pill').forEach((button) => button.addEventListener('click', () => {
+      stateRiwayat.status = button.dataset.filter;
+      stateRiwayat.page = 1;
+      renderFilterRiwayat();
+      pindahHalamanRiwayat();
+    }));
+
+    $('btnDateFilter').addEventListener('click', (event) => {
+      event.stopPropagation();
+      bukaPanelTanggal($('dateFilterPanel').classList.contains('hidden'));
+    });
+    $('dateFilterPanel').addEventListener('click', (event) => event.stopPropagation());
+    document.addEventListener('click', (event) => {
+      if (!$('reportFilterControl').contains(event.target)) bukaPanelTanggal(false);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') bukaPanelTanggal(false);
+    });
+
+    document.querySelectorAll('[data-date-preset]').forEach((button) => {
+      button.addEventListener('click', () => setRentangDraft(button.dataset.datePreset));
+    });
+    ['dateFilterFrom', 'dateFilterTo'].forEach((id) => {
+      $(id).addEventListener('change', () => {
+        draftRentang = { dari: $('dateFilterFrom').value, sampai: $('dateFilterTo').value };
+        renderKontrolRentang();
+        $('dateFilterError').classList.add('hidden');
+      });
+    });
+    $('btnDateFilterReset').addEventListener('click', () => setRentangDraft('7'));
+    $('btnDateFilterApply').addEventListener('click', () => {
+      const dari = $('dateFilterFrom').value;
+      const sampai = $('dateFilterTo').value;
+      const error = $('dateFilterError');
+      if (Boolean(dari) !== Boolean(sampai)) {
+        error.textContent = 'Isi tanggal Dari dan Sampai, atau pilih preset Semua.';
+        error.classList.remove('hidden');
+        return;
+      }
+      if (dari && dari > sampai) {
+        error.textContent = 'Tanggal Dari tidak boleh melewati tanggal Sampai.';
+        error.classList.remove('hidden');
+        return;
+      }
+      stateRiwayat.dari = dari;
+      stateRiwayat.sampai = sampai;
+      stateRiwayat.page = 1;
+      bukaPanelTanggal(false);
+      renderFilterRiwayat();
+      pindahHalamanRiwayat();
+    });
+    $('btnClearDateFilter').addEventListener('click', () => {
+      stateRiwayat.dari = '';
+      stateRiwayat.sampai = '';
+      stateRiwayat.page = 1;
+      renderFilterRiwayat();
+      pindahHalamanRiwayat();
+    });
+    window.addEventListener('popstate', () => {
+      stateRiwayat = bacaStateRiwayatUrl();
+      draftRentang = { dari: stateRiwayat.dari || '', sampai: stateRiwayat.sampai || '' };
+      renderKontrolRentang();
+      renderFilterRiwayat();
+      muatHalamanRiwayat();
     });
   }
 
-  function ikatPill() {
-    document.querySelectorAll('.filter-pill').forEach((p) => p.addEventListener('click', () => { filterPill = p.dataset.filter; terapkanPill(); }));
-  }
-
   async function muatUlangRiwayat() {
-    await muatLaporan();
-    renderRiwayat();
+    await muatHalamanRiwayat();
   }
 
   async function terimaHasil(l) {
@@ -664,9 +1014,13 @@
         return;
       }
       if ($('riwayatList')) {
+        stateRiwayat = bacaStateRiwayatUrl();
+        draftRentang = { dari: stateRiwayat.dari || '', sampai: stateRiwayat.sampai || '' };
         ikatPill();
-        await muatLaporan();
-        renderRiwayat();
+        renderKontrolRentang();
+        renderFilterRiwayat();
+        simpanStateRiwayatUrl(false);
+        await muatHalamanRiwayat();
         return;
       }
       if ($('rankingTableBody')) {

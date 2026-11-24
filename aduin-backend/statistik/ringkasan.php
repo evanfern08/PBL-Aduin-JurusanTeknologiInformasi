@@ -9,10 +9,7 @@
  * Respons : {"ok": true, "data": {"menunggu_verifikasi": 8, ..., "total": 48}}
  *           {"ok": false, "message": "..."}  (disertai HTTP 4xx/5xx)
  *
- * Pemetaan status:
- * Nilai status dipakai setelah dinormalisasi dari "Menunggu Verifikasi" menjadi
- * "menunggu_verifikasi", dan seterusnya. Dengan demikian endpoint mendukung
- * format database snake_case maupun nama status Indonesia yang sudah digunakan aplikasi.
+ * Pemetaan status mengikuti status tampilan yang dipakai tab daftar laporan.
  */
 
 header("Access-Control-Allow-Origin: *");
@@ -26,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../koneksi.php';
+require_once __DIR__ . '/../fungsi.php';
 
 // Metode: hanya GET yang diizinkan.
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
@@ -67,16 +65,18 @@ try {
         ringkasan_respons(null, 'Akses ditolak: hanya verifikator yang boleh membuka ringkasan laporan.', 403);
     }
 
-    // 2. Satu query agregat (PostgreSQL COUNT(*) FILTER).
+    // 2. Satu query agregat dengan kategori status yang sama seperti daftar laporan.
+    $statusUi = "lower(replace((" . sql_status_ui_case() . "), ' ', '_'))";
     $sql = "SELECT
                 COUNT(*) FILTER (WHERE lower(replace(p.status, ' ', '_')) = 'menunggu_verifikasi') AS menunggu_verifikasi,
                 COUNT(*) FILTER (WHERE lower(replace(p.status, ' ', '_')) = 'diteruskan_ke_pusat') AS diteruskan_ke_pusat,
-                COUNT(*) FILTER (WHERE lower(replace(p.status, ' ', '_')) IN ('diproses', 'perlu_perbaikan_ulang')) AS dalam_perbaikan,
-                COUNT(*) FILTER (WHERE lower(replace(p.status, ' ', '_')) = 'menunggu_validasi') AS menunggu_review_hasil,
+                COUNT(*) FILTER (WHERE $statusUi = 'dalam_perbaikan') AS dalam_perbaikan,
+                COUNT(*) FILTER (WHERE $statusUi = 'menunggu_review_hasil') AS menunggu_review_hasil,
                 COUNT(*) FILTER (WHERE lower(replace(p.status, ' ', '_')) = 'selesai') AS selesai,
                 COUNT(*) FILTER (WHERE lower(replace(p.status, ' ', '_')) = 'ditolak') AS ditolak,
                 COUNT(*) AS total
-            FROM pengaduan p";
+            FROM pengaduan p
+            LEFT JOIN penanganan_tugas pt ON pt.id_pengaduan = p.id_pengaduan";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute();

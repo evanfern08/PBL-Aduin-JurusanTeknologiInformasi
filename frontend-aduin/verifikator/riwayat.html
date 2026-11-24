@@ -88,23 +88,64 @@
       </header>
 
       <main class="content-body">
-        <!-- FILTER PILLS -->
-        <div class="glass-card" style="padding: 16px 20px;">
-          <div class="filter-pills" id="filterPills">
-            <button type="button" class="filter-pill active" data-filter="Semua">Semua</button>
-            <button type="button" class="filter-pill" data-filter="Menunggu Verifikasi">Menunggu Verifikasi</button>
-            <button type="button" class="filter-pill" data-filter="Diteruskan ke Pusat">Diteruskan ke Pusat</button>
-            <button type="button" class="filter-pill" data-filter="Dalam Perbaikan">Dalam Perbaikan</button>
-            <button type="button" class="filter-pill" data-filter="Menunggu Review Hasil">Menunggu Review Hasil</button>
-            <button type="button" class="filter-pill" data-filter="Selesai">Selesai</button>
-            <button type="button" class="filter-pill" data-filter="Ditolak">Ditolak</button>
+        <!-- FILTER STATUS DAN RENTANG TANGGAL -->
+        <section class="report-filter-card glass-card" id="reportFilterCard" aria-label="Filter daftar laporan">
+          <div class="report-filter-bar" id="reportFilterBar">
+            <div class="filter-pills" id="filterPills" role="group" aria-label="Filter status laporan">
+              <button type="button" class="filter-pill active" data-filter="Semua" aria-pressed="true">Semua</button>
+              <button type="button" class="filter-pill" data-filter="Menunggu Verifikasi" aria-pressed="false">Menunggu Verifikasi</button>
+              <button type="button" class="filter-pill" data-filter="Diteruskan ke Pusat" aria-pressed="false">Diteruskan ke Pusat</button>
+              <button type="button" class="filter-pill" data-filter="Dalam Perbaikan" aria-pressed="false">Dalam Perbaikan</button>
+              <button type="button" class="filter-pill" data-filter="Menunggu Review Hasil" aria-pressed="false">Menunggu Review Hasil</button>
+              <button type="button" class="filter-pill" data-filter="Selesai" aria-pressed="false">Selesai</button>
+              <button type="button" class="filter-pill" data-filter="Ditolak" aria-pressed="false">Ditolak</button>
+            </div>
+            <div class="report-filter-control" id="reportFilterControl">
+              <button type="button" class="report-filter-toggle" id="btnDateFilter" aria-label="Filter tanggal" title="Filter"
+                aria-controls="dateFilterPanel" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4 6h16M7 12h10m-7 6h4" />
+                  <circle cx="8" cy="6" r="2" />
+                  <circle cx="15" cy="12" r="2" />
+                  <circle cx="12" cy="18" r="2" />
+                </svg>
+                <span class="report-filter-dot" id="dateFilterDot" aria-hidden="true"></span>
+              </button>
+              <div class="report-date-panel hidden" id="dateFilterPanel" role="dialog" aria-labelledby="dateFilterTitle">
+                <h2 id="dateFilterTitle">Rentang tanggal laporan</h2>
+                <div class="report-date-presets" role="group" aria-label="Preset rentang tanggal">
+                  <button type="button" data-date-preset="7" aria-pressed="false">7 hari terakhir</button>
+                  <button type="button" data-date-preset="30" aria-pressed="false">30 hari terakhir</button>
+                  <button type="button" data-date-preset="month" aria-pressed="false">Bulan ini</button>
+                  <button type="button" data-date-preset="all" aria-pressed="false">Semua</button>
+                </div>
+                <div class="report-date-inputs">
+                  <label><span>Dari</span><input type="date" id="dateFilterFrom"></label>
+                  <label><span>Sampai</span><input type="date" id="dateFilterTo"></label>
+                </div>
+                <p class="report-date-error hidden" id="dateFilterError" role="alert"></p>
+                <div class="report-date-actions">
+                  <button type="button" class="btn btn-ghost" id="btnDateFilterReset">Atur ulang</button>
+                  <button type="button" class="btn" id="btnDateFilterApply">Terapkan</button>
+                </div>
+              </div>
+            </div>
           </div>
+        </section>
+
+        <div class="report-active-filter hidden" id="activeDateFilter" aria-live="polite">
+          <span class="report-active-label">Filter aktif</span>
+          <span class="report-active-chip"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span id="activeDateFilterText"></span></span>
+          <button type="button" id="btnClearDateFilter" aria-label="Hapus filter tanggal" title="Hapus filter tanggal">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
         </div>
 
         <!-- LIST KARTU LAPORAN -->
         <div id="riwayatList" class="riwayat-list">
           <!-- Diisi via JS -->
         </div>
+        <nav class="report-pagination glass-card hidden" id="reportPagination" aria-label="Pagination daftar laporan"></nav>
       </main>
     </div>
   </div>

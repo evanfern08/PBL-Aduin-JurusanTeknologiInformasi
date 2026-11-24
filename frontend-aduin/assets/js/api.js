@@ -81,11 +81,12 @@ const API_BASE = 'https://pbl-aduin-jurusanteknologiinformasi-eta.vercel.app';
     if (!json) {
       throw new Error('Respons server tidak valid (HTTP ' + res.status + '). Periksa log PHP.');
     }
-    if (!json.success) {
+    if (!json.success && !json.ok) {
       const err = new Error(json.message || 'Permintaan gagal.');
       err.status = res.status;
       throw err;
     }
+    if (json.ok) return { data: json.data, meta: json.meta };
     return json.data;
   }
 
