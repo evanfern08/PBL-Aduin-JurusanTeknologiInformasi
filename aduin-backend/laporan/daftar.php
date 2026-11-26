@@ -37,6 +37,20 @@ try {
         daftar_laporan_respons(['ok' => false, 'message' => 'Akses ditolak: hanya verifikator yang boleh membuka daftar laporan.'], 403);
     }
 
+    $modeSatuLaporan = array_key_exists('id_pengaduan', $_GET);
+    if ($modeSatuLaporan) {
+        $idInput = $_GET['id_pengaduan'];
+        $idPengaduan = filter_var(is_scalar($idInput) ? $idInput : null, FILTER_VALIDATE_INT);
+        if (!$idPengaduan || $idPengaduan <= 0) {
+            daftar_laporan_respons(['ok' => false, 'message' => 'ID laporan tidak valid.'], 400);
+        }
+        $perPage = 1;
+        $page = 1;
+        $tanggalDari = null;
+        $tanggalSampai = null;
+        $where = ' WHERE p.id_pengaduan = :id_pengaduan';
+        $parameter = [':id_pengaduan' => $idPengaduan];
+    } else {
     $zonaWaktu = new DateTimeZone('Asia/Jakarta');
     $hariIni = new DateTimeImmutable('today', $zonaWaktu);
     $tanggalDariDefault = $hariIni->modify('-7 days')->format('Y-m-d');
@@ -104,6 +118,7 @@ try {
     if ($status !== '') {
         $where .= ' AND (' . sql_status_ui_case() . ') = :status';
         $parameter[':status'] = $status;
+    }
     }
 
     $from = ' FROM pengaduan p LEFT JOIN penanganan_tugas pt ON pt.id_pengaduan = p.id_pengaduan';

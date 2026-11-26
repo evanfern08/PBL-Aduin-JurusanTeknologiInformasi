@@ -242,6 +242,7 @@
   function kartuRiwayat(l) {
     const card = document.createElement('div');
     card.className = 'glass-card riwayat-card';
+    card.id = 'laporan-' + l.id_pengaduan;
     card.dataset.status = l.status_ui;
     card.style.cursor = 'pointer';
 
@@ -345,6 +346,16 @@
 
   function bacaStateRiwayatUrl() {
     const params = new URLSearchParams(window.location.search);
+    if (params.has('laporan')) {
+      return {
+        status: 'Semua',
+        dari: '',
+        sampai: '',
+        perPage: 10,
+        page: 1,
+        laporanId: params.get('laporan'),
+      };
+    }
     const statusUrl = params.get('status') || '';
     const status = STATUS_DAFTAR.includes(statusUrl) ? statusUrl : (STATUS_URL_MAP[statusUrl] || 'Semua');
     const tanggalSemua = params.get('tanggal_semua') === '1';
@@ -370,10 +381,17 @@
       sampai: rentang.sampai,
       perPage: [10, 25, 50].includes(perPage) ? perPage : 10,
       page: Number.isInteger(page) && page > 0 ? page : 1,
+      laporanId: null,
     };
   }
 
   function simpanStateRiwayatUrl(push) {
+    if (stateRiwayat.laporanId !== null) {
+      const urlFokus = window.location.pathname + '?laporan=' + encodeURIComponent(stateRiwayat.laporanId);
+      if (push) window.history.pushState(null, '', urlFokus);
+      else window.history.replaceState(null, '', urlFokus);
+      return;
+    }
     const params = new URLSearchParams();
     if (stateRiwayat.status !== 'Semua') params.set('status', stateRiwayat.status);
     if (stateRiwayat.dari && stateRiwayat.sampai) {
@@ -428,6 +446,12 @@
   }
 
   function renderFilterRiwayat() {
+    const modeSatuLaporan = stateRiwayat.laporanId !== null;
+    $('reportFilterCard').classList.toggle('hidden', modeSatuLaporan);
+    $('activeDateFilter').classList.toggle('hidden', modeSatuLaporan || !stateRiwayat.dari || !stateRiwayat.sampai);
+    $('focusReportBanner').classList.toggle('hidden', !modeSatuLaporan);
+    if (modeSatuLaporan) $('focusReportNumber').textContent = stateRiwayat.laporanId;
+
     document.querySelectorAll('.filter-pill').forEach((button) => {
       const active = button.dataset.filter === stateRiwayat.status;
       button.classList.toggle('active', active);
@@ -467,6 +491,7 @@
 
   function tampilkanSkeletonRiwayat() {
     const list = $('riwayatList');
+    const modeSatuLaporan = stateRiwayat.laporanId !== null;
     list.setAttribute('aria-busy', 'true');
     list.innerHTML = Array.from({ length: 3 }, () =>
       '<div class="report-skeleton-card" aria-hidden="true"><div class="report-skeleton-line medium"></div>' +
@@ -474,6 +499,8 @@
       '<div class="report-skeleton-timeline"><span></span><span></span><span></span><span></span><span></span></div></div>'
     ).join('');
     const pagination = $('reportPagination');
+    pagination.classList.toggle('hidden', modeSatuLaporan);
+    if (modeSatuLaporan) return;
     pagination.classList.remove('hidden');
     pagination.setAttribute('aria-busy', 'true');
     pagination.innerHTML = '<div class="report-pagination-info"><span class="report-skeleton-line" aria-hidden="true" style="display:inline-block;width:11em;height:1em;margin:0;"></span></div>';
@@ -489,6 +516,11 @@
 
   function renderPaginationRiwayat() {
     const pagination = $('reportPagination');
+    if (stateRiwayat.laporanId !== null) {
+      pagination.classList.add('hidden');
+      pagination.removeAttribute('aria-busy');
+      return;
+    }
     pagination.removeAttribute('aria-busy');
     if (!metaRiwayat) {
       pagination.classList.add('hidden');
@@ -545,15 +577,23 @@
     if (!stateRiwayat) return;
     const nomorPermintaan = ++nomorPermintaanRiwayat;
     tampilkanSkeletonRiwayat();
-    const params = {
-      id_verifikator: sesi.id_user,
-      status: stateRiwayat.status !== 'Semua' ? stateRiwayat.status : undefined,
-      tanggal_dari: stateRiwayat.dari || undefined,
-      tanggal_sampai: stateRiwayat.sampai || undefined,
-      tanggal_semua: !stateRiwayat.dari && !stateRiwayat.sampai ? 1 : undefined,
-      per_page: stateRiwayat.perPage,
-      page: stateRiwayat.page,
-    };
+    const params = { id_verifikator: sesi.id_user };
+    if (stateRiwayat.laporanId !== null) {
+      if (!/^[1-9]\d*$/.test(stateRiwayat.laporanId)) {
+        laporan = [];
+        metaRiwayat = { total: 0, page: 1, per_page: 1, total_pages: 0 };
+        renderRiwayat();
+        return;
+      }
+      params.id_pengaduan = stateRiwayat.laporanId;
+    } else {
+      params.status = stateRiwayat.status !== 'Semua' ? stateRiwayat.status : undefined;
+      params.tanggal_dari = stateRiwayat.dari || undefined;
+      params.tanggal_sampai = stateRiwayat.sampai || undefined;
+      params.tanggal_semua = !stateRiwayat.dari && !stateRiwayat.sampai ? 1 : undefined;
+      params.per_page = stateRiwayat.perPage;
+      params.page = stateRiwayat.page;
+    }
     try {
       const response = await API.get('api/laporan/daftar.php', params);
       if (nomorPermintaan !== nomorPermintaanRiwayat) return;
@@ -590,10 +630,11 @@
     list.innerHTML = '';
     list.removeAttribute('aria-busy');
     if (!laporan.length) {
-      buatStateRiwayat('Tidak ada laporan pada rentang ini', {
+      const modeSatuLaporan = stateRiwayat.laporanId !== null;
+      buatStateRiwayat(modeSatuLaporan ? 'Laporan tidak ditemukan' : 'Tidak ada laporan pada rentang ini', {
         id: 'btnViewAllReports',
         label: 'Lihat semua laporan',
-        aksi: () => {
+        aksi: modeSatuLaporan ? () => { window.location.href = 'riwayat.html'; } : () => {
           stateRiwayat.status = 'Semua';
           stateRiwayat.dari = '';
           stateRiwayat.sampai = '';
@@ -605,9 +646,15 @@
       });
     } else {
       laporan.forEach((l) => list.appendChild(kartuRiwayat(l)));
+      if (stateRiwayat.laporanId !== null) {
+        const card = $('laporan-' + stateRiwayat.laporanId);
+        if (card) {
+          card.classList.add('report-focus-highlight');
+          requestAnimationFrame(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+        }
+      }
     }
     renderPaginationRiwayat();
-    renderReminder();
   }
 
   function ikatPill() {
@@ -807,30 +854,6 @@
     if (modal) modal.classList.add('hidden');
     if (modal) modal.classList.remove('flex', 'active');
   };
-
-  /* ---- Pengingat: laporan di UPA PP Pusat mengendap > 3 hari ---- */
-  function renderReminder() {
-    const btn = $('btn-reminder');
-    if (!btn) return;
-    const dropdown = $('inbox-dropdown'), listEl = $('inbox-list'), badge = $('inbox-badge-count');
-    const hari = (s) => { const d = A.parseTanggal(s); return d ? Math.floor((Date.now() - d.getTime()) / 86400000) : 0; };
-    const mengendap = laporan.filter((l) => l.status_ui === 'Diteruskan ke Pusat' && hari(l.tanggal_status_terakhir || l.tanggal_lapor) > 3);
-
-    badge.textContent = mengendap.length;
-    badge.classList.toggle('hidden', mengendap.length === 0);
-    listEl.innerHTML = mengendap.length ? mengendap.map((l) =>
-      '<div class="inbox-item" data-id="' + l.id_pengaduan + '"><div class="inbox-item-title">' + esc(l.judul_laporan) + '</div>' +
-      '<div class="inbox-item-loc">' + esc(l.nama_ruangan) + '</div>' +
-      '<span class="badge-mengendap">Mengendap > 3 Hari (' + hari(l.tanggal_status_terakhir || l.tanggal_lapor) + ' hari)</span></div>').join('')
-      : '<div style="padding:16px;text-align:center;color:#737d92;font-size:13px;">Tidak ada laporan yang mengendap.</div>';
-    listEl.querySelectorAll('.inbox-item').forEach((it) => it.addEventListener('click', () => { dropdown.classList.add('hidden'); window.bukaModalDetail(it.dataset.id); }));
-
-    if (!btn.dataset.bound) {
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('hidden'); });
-      document.addEventListener('click', (e) => { if (!dropdown.contains(e.target) && e.target !== btn) dropdown.classList.add('hidden'); });
-    }
-  }
 
   /* ==========================================================================
      STATISTIK

@@ -133,6 +133,14 @@
           </div>
         </section>
 
+        <div class="report-active-filter report-focus-filter hidden" id="focusReportBanner" aria-live="polite">
+          <span class="report-active-label">Menampilkan laporan #<span id="focusReportNumber"></span></span>
+          <a class="report-focus-close" href="riwayat.html" aria-label="Kembali ke daftar laporan" title="Kembali ke daftar laporan">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </a>
+          <a class="btn btn-ghost report-focus-reset" href="riwayat.html">Lihat semua laporan</a>
+        </div>
+
         <div class="report-active-filter hidden" id="activeDateFilter" aria-live="polite">
           <span class="report-active-label">Filter aktif</span>
           <span class="report-active-chip"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span id="activeDateFilterText"></span></span>
@@ -227,7 +235,8 @@
   <script src="../assets/js/config.js"></script>
   <script src="../assets/js/api.js?v=20261124142224"></script>
   <script src="../assets/js/app.js"></script>
-  <script src="../assets/js/verifikator.js?v=20261124232231"></script>
+  <script src="../assets/js/verifikator.js?v=20261126091118"></script>
+  <script src="../assets/js/notifikasi.js?v=20261126091118"></script>
 </body>
 
 </html>

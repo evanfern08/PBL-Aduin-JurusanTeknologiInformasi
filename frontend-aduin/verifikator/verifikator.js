@@ -332,7 +332,6 @@
         if (!laporan.length) list.innerHTML = '<p class="glass-card text-muted">Belum ada laporan.</p>';
         laporan.forEach((l) => list.appendChild(kartuRiwayat(l)));
         terapkanPill();
-        renderReminder();
     }
 
     function terapkanPill() {
@@ -597,27 +596,6 @@
 
     window.bukaLightbox = bukaLightbox;
     window.tutupLightbox = tutupLightbox;
-
-    function renderReminder() {
-        const btn = $('btn-reminder');
-        if (!btn) return;
-        const dropdown = $('inbox-dropdown'), listEl = $('inbox-list'), badge = $('inbox-badge-count');
-        const hari = (s) => { const d = A.parseTanggal(s); return d ? Math.floor((Date.now() - d.getTime()) / 86400000) : 0; };
-        const mengendap = laporan.filter((l) => l.status_ui === 'Diteruskan ke Pusat' && hari(l.tanggal_status_terakhir || l.tanggal_lapor) > 3);
-        badge.textContent = mengendap.length;
-        badge.classList.toggle('hidden', mengendap.length === 0);
-        listEl.innerHTML = mengendap.length ? mengendap.map((l) =>
-            '<div class="inbox-item" data-id="' + l.id_pengaduan + '"><div class="inbox-item-title">' + esc(l.judul_laporan) + '</div>' +
-            '<div class="inbox-item-loc">' + esc(l.nama_ruangan) + '</div>' +
-            '<span class="badge-mengendap">Mengendap > 3 Hari (' + hari(l.tanggal_status_terakhir || l.tanggal_lapor) + ' hari)</span></div>').join('')
-            : '<div style="padding:16px;text-align:center;color:#737d92;font-size:13px;">Tidak ada laporan yang mengendap.</div>';
-        listEl.querySelectorAll('.inbox-item').forEach((it) => it.addEventListener('click', () => { dropdown.classList.add('hidden'); window.bukaModalDetail(it.dataset.id); }));
-        if (!btn.dataset.bound) {
-            btn.dataset.bound = '1';
-            btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('hidden'); });
-            document.addEventListener('click', (e) => { if (!dropdown.contains(e.target) && e.target !== btn) dropdown.classList.add('hidden'); });
-        }
-    }
 
     function formatDurasi(ms) {
         if (ms === null || isNaN(ms)) return '—';
