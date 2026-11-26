@@ -242,30 +242,119 @@
     else if (e.key === 'ArrowRight') lightboxNav(1);
   }
 
+  /* ------------------------------------------------------------------
+     Daftar laporan: pencarian multi-kata + pagination (client-side)
+     ------------------------------------------------------------------ */
+  const PER_HALAMAN_PILIHAN = [5, 10, 20];
+  let halamanAktif = 1;
+  let perHalaman = 5;
+
+  // Hilangkan tanda baca & ubah ke huruf kecil, lalu pecah jadi kata-kata
+  function kataKunci(teks) {
+    return String(teks || '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+      .split(/\s+/)
+      .filter(Boolean);
+  }
+
+  // Semua kata yang diketik harus ada di salah satu kolom laporan (urutan bebas)
+  function cocokPencarian(r, kata) {
+    if (!kata.length) return true;
+    const gudang = kataKunci([
+      r.id_pengaduan, r.judul_laporan, r.nama_ruangan, r.nama_kategori,
+      r.nama_pelapor, r.deskripsi, A.statusUntukPelapor(r.status_ui),
+    ].join(' ')).join(' ');
+    return kata.every((k) => gudang.indexOf(k) !== -1);
+  }
+
+  function renderPagination(total) {
+    const box = document.getElementById('reportPagination');
+    if (!box) return;
+    const totalHalaman = Math.ceil(total / perHalaman);
+    if (total === 0) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+
+    const mulai = (halamanAktif - 1) * perHalaman + 1;
+    const akhir = Math.min(halamanAktif * perHalaman, total);
+    const awal = Math.max(1, Math.min(halamanAktif - 2, totalHalaman - 4));
+    const batas = Math.min(totalHalaman, awal + 4);
+    let tombol = '';
+    for (let n = awal; n <= batas; n++) {
+      tombol += '<button type="button" class="report-page-button' + (n === halamanAktif ? ' active' : '') +
+        '" data-page="' + n + '" aria-label="Halaman ' + n + '"' +
+        (n === halamanAktif ? ' aria-current="page"' : '') + '>' + n + '</button>';
+    }
+    box.innerHTML =
+      '<div class="report-pagination-info"><span>Tampilkan</span>' +
+      '<select id="reportPerPage" aria-label="Jumlah laporan per halaman">' +
+      PER_HALAMAN_PILIHAN.map((j) => '<option value="' + j + '"' + (j === perHalaman ? ' selected' : '') + '>' + j + '</option>').join('') +
+      '</select><span>per halaman · ' + mulai + '–' + akhir + ' dari ' + total + ' laporan</span></div>' +
+      '<div class="report-pagination-buttons">' +
+      '<button type="button" class="report-page-button" data-page="' + (halamanAktif - 1) + '" aria-label="Halaman sebelumnya"' + (halamanAktif <= 1 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>' +
+      tombol +
+      '<button type="button" class="report-page-button" data-page="' + (halamanAktif + 1) + '" aria-label="Halaman berikutnya"' + (halamanAktif >= totalHalaman ? ' disabled' : '') + '><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button></div>';
+
+    box.querySelector('#reportPerPage').addEventListener('change', (e) => {
+      perHalaman = Number(e.target.value) || 5;
+      halamanAktif = 1;
+      renderDaftar();
+    });
+    box.querySelectorAll('[data-page]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const n = Number(btn.dataset.page);
+        if (!n || n < 1 || n > totalHalaman) return;
+        halamanAktif = n;
+        renderDaftar();
+        const list = document.getElementById('reports-list');
+        if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
   function renderDaftar() {
     const list = document.getElementById('reports-list');
     if (!list) return;
     const filter = list.dataset.filter || 'all';
+    const input = document.getElementById('reportSearchInput');
+    const query = (input ? input.value : '').trim();
+    const kata = kataKunci(query);
+
+    const tampil = semuaLaporan.filter((r) =>
+      (filter === 'all' || A.statusUntukPelapor(r.status_ui) === filter) && cocokPencarian(r, kata));
+
+    const totalHalaman = Math.max(1, Math.ceil(tampil.length / perHalaman));
+    if (halamanAktif > totalHalaman) halamanAktif = totalHalaman;
+    const potongan = tampil.slice((halamanAktif - 1) * perHalaman, halamanAktif * perHalaman);
+
     list.replaceChildren();
-    const tampil = semuaLaporan.filter((r) => filter === 'all' || A.statusUntukPelapor(r.status_ui) === filter);
-    tampil.forEach((r) => list.append(kartuLaporan(r)));
+    const info = document.getElementById('reportSearchResult');
+    if (info) info.textContent = kata.length ? 'Menampilkan ' + tampil.length + ' laporan yang cocok.' : '';
+
+    potongan.forEach((r) => list.append(kartuLaporan(r)));
     if (!tampil.length) {
       const p = document.createElement('p');
       p.className = 'glass-card text-muted';
-      p.textContent = 'Belum ada laporan untuk status ini.';
+      p.textContent = kata.length ? 'Laporan tidak ditemukan.' : 'Belum ada laporan untuk status ini.';
       list.append(p);
     }
+    renderPagination(tampil.length);
   }
 
   function initFilter() {
     const list = document.getElementById('reports-list');
     if (!list) return;
+    const search = document.getElementById('reportSearchInput');
+    if (search) {
+      search.addEventListener('input', () => { halamanAktif = 1; renderDaftar(); });
+    }
     document.querySelectorAll('[data-report-filter]').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-report-filter]').forEach((b) => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
         btn.classList.add('active');
         btn.setAttribute('aria-pressed', 'true');
         list.dataset.filter = btn.dataset.reportFilter;
+        halamanAktif = 1;
         renderDaftar();
       });
     });
