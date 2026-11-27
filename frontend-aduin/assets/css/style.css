@@ -2525,3 +2525,37 @@ select.glass-input { cursor: pointer; }
 .combo-option:hover, .combo-option.active { background: #eff6ff; color: var(--blue-dark); }
 .combo-option.selected { font-weight: 700; }
 .combo-empty { padding: 14px 12px; font-size: 13px; color: var(--muted); text-align: center; }
+
+/* =========================================
+   TOMBOL EKSPOR WORD (BIRU)
+   ========================================= */
+.btn-export-word {
+  background-color: #0284C7; /* Biru utama senada sidebar */
+  color: #ffffff;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px; /* Padding tetap sama */
+  border-radius: 8px; /* Border radius tetap sama */
+  font-size: 14px;    /* Ukuran font tetap sama */
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-export-word i {
+  color: #ffffff; /* Ikon Word menjadi putih */
+  font-size: 16px;
+}
+
+/* State Hover: Biru lebih gelap */
+.btn-export-word:hover:not(:disabled) {
+  background-color: #0369A1; /* Biru lebih gelap */
+}
+
+/* State Disabled (saat belum ada laporan dipilih) */
+.btn-export-word:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
